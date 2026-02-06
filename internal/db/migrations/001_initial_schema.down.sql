@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS runbook_status;
+DROP TABLE IF EXISTS audit_log;
+ALTER TABLE documents DROP CONSTRAINT IF EXISTS fk_documents_current_revision;
+DROP TABLE IF EXISTS revisions;
+DROP TABLE IF EXISTS documents;
+DROP TABLE IF EXISTS clients;
+DROP TABLE IF EXISTS memberships;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS tenants;

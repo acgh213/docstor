@@ -1,0 +1,42 @@
+{{define "sidebar"}}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1 class="logo">Docstor</h1>
+        {{if .Tenant}}
+        <span class="tenant-name">{{.Tenant.Name}}</span>
+        {{end}}
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/" class="nav-item">Dashboard</a>
+        <a href="/docs" class="nav-item">Docs</a>
+        <a href="/runbooks" class="nav-item">Runbooks</a>
+        <a href="/clients" class="nav-item">Clients</a>
+        <a href="/search" class="nav-item">Search</a>
+    </nav>
+</aside>
+{{end}}
+
+{{define "topbar"}}
+<header class="topbar">
+    <div class="topbar-left">
+        <select class="client-filter">
+            <option value="">All Clients</option>
+        </select>
+    </div>
+    <div class="topbar-right">
+        <form action="/search" method="get" class="search-form">
+            <input type="search" name="q" placeholder="Search..." class="search-input">
+        </form>
+        {{if .User}}
+        <div class="user-menu">
+            <span class="user-info">{{.User.Name}}</span>
+            <form action="/logout" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+        </div>
+        {{else}}
+        <a href="/login" class="btn btn-primary btn-sm">Login</a>
+        {{end}}
+    </div>
+</header>
+{{end}}
