@@ -451,6 +451,61 @@ func (r *Repository) ListRevisions(ctx context.Context, tenantID, docID uuid.UUI
 	return revisions, nil
 }
 
+// Revert creates a new revision with the body from an old revision
+func (r *Repository) Revert(ctx context.Context, tenantID, docID, revisionID uuid.UUID, revertedBy uuid.UUID) (*Document, error) {
+	// Get the revision to revert to
+	rev, err := r.GetRevision(ctx, tenantID, revisionID)
+	if err != nil {
+		return nil, fmt.Errorf("get revision: %w", err)
+	}
+
+	// Verify it belongs to this document
+	if rev.DocumentID != docID {
+		return nil, ErrNotFound
+	}
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Get current revision ID
+	var currentRevID uuid.UUID
+	err = tx.QueryRow(ctx, `SELECT current_revision_id FROM documents WHERE tenant_id = $1 AND id = $2 FOR UPDATE`,
+		tenantID, docID).Scan(&currentRevID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query document: %w", err)
+	}
+
+	// Create new revision with old body
+	message := fmt.Sprintf("Reverted to revision from %s", rev.CreatedAt.Format("Jan 2, 2006 3:04 PM"))
+	var newRevID uuid.UUID
+	err = tx.QueryRow(ctx, `
+		INSERT INTO revisions (tenant_id, document_id, body_markdown, created_by, message, base_revision_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`, tenantID, docID, rev.BodyMarkdown, revertedBy, message, currentRevID).Scan(&newRevID)
+	if err != nil {
+		return nil, fmt.Errorf("insert revision: %w", err)
+	}
+
+	// Update document
+	_, err = tx.Exec(ctx, `UPDATE documents SET current_revision_id = $1, updated_at = NOW() WHERE id = $2`, newRevID, docID)
+	if err != nil {
+		return nil, fmt.Errorf("update document: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return r.GetByID(ctx, tenantID, docID)
+}
+
 func normalizePath(path string) string {
 	path = strings.TrimPrefix(path, "/")
 	path = strings.TrimSuffix(path, "/")

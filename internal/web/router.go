@@ -90,6 +90,9 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		r.Get("/docs/id/{id}/edit", s.handleDocEditByID)
 		r.Post("/docs/id/{id}/save", s.handleDocSaveByID)
 		r.Get("/docs/id/{id}/history", s.handleDocHistoryByID)
+		r.Get("/docs/id/{id}/diff", s.handleDocDiffByID)
+		r.Get("/docs/id/{id}/revision/{revID}", s.handleDocRevisionByID)
+		r.Post("/docs/id/{id}/revert/{revID}", s.handleDocRevertByID)
 		// Document read by path (must be last)
 		r.Get("/docs/*", s.handleDocRead)
 

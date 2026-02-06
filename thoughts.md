@@ -1,6 +1,6 @@
 # Docstor Implementation Progress
 
-## Current Status: Phase 3 Complete
+## Current Status: Phase 4 Complete
 
 ## Completed Phases
 
@@ -26,53 +26,52 @@
 - Markdown rendering with goldmark + bluemonday
 - Templates: list, read, form, edit, history, conflict
 - Route structure: `/docs/*` for read, `/docs/id/{id}/...` for operations
-- Fixed: nil pointer in GetRevision (Author field)
-- Fixed: template global namespace conflict (made templates self-contained)
-- Fixed: history page truncation (uuid pointer comparison)
+
+### Phase 4 ✅
+- **Revert functionality**: Creates new revision from old revision's content
+- **Diff view**: Line-by-line diff between any two revisions
+- **Revision view**: View any historical revision with rendered markdown
+- **History UI enhanced**: Compare revisions dropdown, View/Revert buttons
+- **Audit logging**: Revert actions logged with metadata
+- Uses go-diff/diffmatchpatch for line-based diff computation
 
 ## Remaining Work
 
-### Phase 3 - COMPLETED
+### Phase 5 - Editor Island (Not Started)
+- CodeMirror 6 on edit pages (with textarea fallback)
+- HTMX preview endpoint improvements
 
-### Phase 4-7 (Not Started)
-- Revert functionality
-- Diff view
-- CodeMirror editor
-- Full-text search
-- Runbook verification
+### Phase 6 - Search (Not Started)
+- Full-text search using Postgres tsvector
+- Search UI with filters (client, doc_type, owner)
 
-## Key Files Created This Session
+### Phase 7 - Living Runbooks (Not Started)
+- Runbook verification workflow
+- Overdue runbooks dashboard
+- Verification interval tracking
+
+## Key Files Added/Modified This Session
 
 ```
 internal/
-├── auth/
-│   ├── context.go
-│   ├── middleware.go
-│   ├── password.go
-│   └── session.go
-├── audit/audit.go
-├── clients/clients.go
 ├── docs/
-│   ├── docs.go
-│   └── markdown.go
+│   ├── docs.go          # Added Revert() method
+│   └── diff.go          # NEW: Diff computation
 └── web/
-    ├── handlers.go
-    ├── handlers_docs.go
-    ├── router.go
-    ├── static/css/main.css
-    └── templates/
-        ├── layout/base.html
-        ├── auth/login.html
-        ├── clients/*.html
-        └── docs/*.html
+    ├── handlers_docs.go # Added handleDocRevert, handleDocDiff, handleDocRevision
+    ├── router.go        # Added routes for diff, revision, revert
+    └── templates/docs/
+        ├── doc_diff.html     # NEW: Diff view template
+        ├── doc_revision.html # NEW: Revision view template
+        └── doc_history.html  # Updated with compare UI, View/Revert buttons
 ```
 
 ## Technical Notes
 
-1. Chi wildcard routes can't have suffixes - used `/docs/id/{id}/edit` pattern
-2. Sessions stored in DB with token hashing for security
-3. Markdown sanitized server-side before rendering
-4. All queries tenant-scoped in repository layer
+1. Diff uses go-diff/diffmatchpatch for line-based comparison
+2. Revert creates a new revision (never deletes history)
+3. All revert operations are audited with metadata
+4. History page now has revision comparison feature
 
 ## Handoff
 

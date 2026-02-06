@@ -1,8 +1,8 @@
 # Docstor Implementation Handoff
 
-## Project Status: Phase 3 Complete
+## Project Status: Phase 4 Complete
 
-Docstor is a web-first MSP documentation system. The core foundation is complete and the documents module is partially implemented.
+Docstor is a web-first MSP documentation system. The core foundation is complete through Phase 4 (Trust Layer with revisions, revert, and diff).
 
 ---
 
@@ -57,6 +57,27 @@ Docstor is a web-first MSP documentation system. The core foundation is complete
   - `doc_history.html` - Revision history
   - `doc_conflict.html` - Conflict resolution page
 
+### Phase 4: Trust Layer (Revisions) ✅
+- **Revert functionality** (`internal/docs/docs.go`):
+  - `Revert()` method creates new revision from old revision's body
+  - Never deletes history - always creates a new revision
+  - Auto-generated commit message indicating source revision
+- **Diff view** (`internal/docs/diff.go`):
+  - Line-by-line diff using go-diff/diffmatchpatch
+  - Returns additions/deletions counts
+  - HTML-escaped output for safe rendering
+- **Handlers**:
+  - `handleDocRevertByID` - Revert to a specific revision
+  - `handleDocDiffByID` - Compare two revisions
+  - `handleDocRevisionByID` - View a specific revision
+- **Templates**:
+  - `doc_diff.html` - Side-by-side diff view with line numbers
+  - `doc_revision.html` - View historical revision with revert option
+  - Enhanced `doc_history.html` with compare dropdown and View/Revert buttons
+- **Audit logging**:
+  - Revert actions logged with `doc.revert` action
+  - Metadata includes: path, reverted_to revision ID, new revision ID
+
 ---
 
 ## Current File Structure
@@ -81,6 +102,7 @@ Docstor is a web-first MSP documentation system. The core foundation is complete
 │   │   └── migrations/       # SQL migrations
 │   ├── docs/
 │   │   ├── docs.go           # Documents repository
+│   │   ├── diff.go           # Diff computation
 │   │   └── markdown.go       # Markdown rendering
 │   └── web/
 │       ├── handlers.go       # Auth, dashboard, client handlers
@@ -133,23 +155,44 @@ make dev
 
 ---
 
+## Routes Summary
+
+### Auth
+- `GET /login` - Login page
+- `POST /login` - Authenticate
+- `POST /logout` - Log out
+
+### Documents
+- `GET /docs` - Document list
+- `GET /docs/new` - Create form
+- `POST /docs/new` - Create document
+- `GET /docs/*` - Read document by path
+- `GET /docs/id/{id}/edit` - Edit form
+- `POST /docs/id/{id}/save` - Save changes
+- `GET /docs/id/{id}/history` - Revision history
+- `GET /docs/id/{id}/diff?from=...&to=...` - Compare revisions
+- `GET /docs/id/{id}/revision/{revID}` - View specific revision
+- `POST /docs/id/{id}/revert/{revID}` - Revert to revision
+
+### Clients
+- `GET /clients` - Client list
+- `GET /clients/new` - Create form
+- `POST /clients` - Create client
+- `GET /clients/{id}` - View client
+- `GET /clients/{id}/edit` - Edit form
+- `POST /clients/{id}` - Update client
+
+### Utilities
+- `GET /health` - Health check
+- `POST /preview` - Markdown preview (HTMX)
+
+---
+
 ## What's Left to Complete
-
-### Phase 3 Remaining (Documents MVP) - COMPLETED
-- [x] Fixed document creation 500 error (nil pointer in GetRevision)
-- [x] Fixed template rendering issue (global "content" block conflict)
-- [x] Fixed history page truncation (uuid pointer comparison issue)
-- [x] Created `doc_conflict.html` template for revision conflicts
-- [x] Added CSS for conflict page
-
-### Phase 4: Trust Layer (Revisions)
-- [ ] Implement revert functionality (creates new revision from old)
-- [ ] Add diff view between revisions
-- [ ] Test conflict detection when two users edit simultaneously
 
 ### Phase 5: Editor Island
 - [ ] Add CodeMirror 6 on edit pages (with textarea fallback)
-- [ ] Implement HTMX preview endpoint properly
+- [ ] Improve HTMX preview endpoint
 
 ### Phase 6: Search
 - [ ] Add full-text search using Postgres tsvector
@@ -169,16 +212,8 @@ make dev
 3. **Markdown**: Server-side rendering with goldmark, sanitized with bluemonday
 4. **Templates**: Go html/template with embedded FS, partials in layout/
 5. **Revisions**: Conflict detection via `base_revision_id` check before save
-
----
-
-## Known Issues / Notes
-
-1. Preview button uses HTMX but the JS show/hide is a quick fallback
-2. Runbooks dashboard and verification not yet implemented
-3. Search not yet implemented
-
-**Priority for next session**: Implement Phase 4 (Revert functionality, diff view) or Phase 5 (CodeMirror editor).
+6. **Diff**: Uses go-diff/diffmatchpatch for line-based comparison
+7. **Revert**: Always creates new revision, never deletes history
 
 ---
 
@@ -197,10 +232,16 @@ curl -c cookies.txt -X POST -d "email=admin@example.com&password=admin123" http:
 curl -b cookies.txt http://localhost:8080/docs
 
 # Create a document
-curl -b cookies.txt -X POST -d "path=test/hello&title=Hello World&body=# Hello\n\nThis is a test." http://localhost:8080/docs/new
+curl -b cookies.txt -X POST -d "path=test/hello&title=Hello World&body=# Hello" http://localhost:8080/docs/new
 
-# View the document
-curl -b cookies.txt http://localhost:8080/docs/test/hello
+# View revision history
+curl -b cookies.txt http://localhost:8080/docs/id/{DOC_ID}/history
+
+# Compare revisions
+curl -b cookies.txt "http://localhost:8080/docs/id/{DOC_ID}/diff?from={REV1_ID}&to={REV2_ID}"
+
+# Revert to a revision
+curl -b cookies.txt -X POST http://localhost:8080/docs/id/{DOC_ID}/revert/{REV_ID}
 ```
 
 ---
@@ -213,4 +254,4 @@ curl -b cookies.txt http://localhost:8080/docs/test/hello
 
 ---
 
-*Handoff updated: 2026-02-06* - Phase 3 completed, document CRUD fully functional
+*Handoff updated: 2026-02-06* - Phase 4 completed, revert and diff functionality working

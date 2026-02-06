@@ -21,6 +21,9 @@ type DocPageData struct {
 	RenderedBody template.HTML
 	Revisions    []docs.Revision
 	Clients      []ClientOption
+	FromRevision *docs.Revision
+	ToRevision   *docs.Revision
+	Diff         *docs.DiffResult
 }
 
 type ClientOption struct {
@@ -416,4 +419,179 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(rendered))
+}
+
+func (s *Server) handleDocRevertByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	membership := auth.MembershipFromContext(ctx)
+	tenant := auth.TenantFromContext(ctx)
+	user := auth.UserFromContext(ctx)
+
+	if !membership.IsEditor() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	docID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	revID, err := uuid.Parse(chi.URLParam(r, "revID"))
+	if err != nil {
+		http.Error(w, "Invalid revision ID", http.StatusBadRequest)
+		return
+	}
+
+	// Perform revert
+	doc, err := s.docs.Revert(ctx, tenant.ID, docID, revID, user.ID)
+	if errors.Is(err, docs.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to revert document", "error", err)
+		http.Error(w, "Failed to revert document", http.StatusInternalServerError)
+		return
+	}
+
+	// Audit log
+	_ = s.audit.Log(ctx, audit.Entry{
+		TenantID:    tenant.ID,
+		ActorUserID: &user.ID,
+		Action:      audit.ActionDocRevert,
+		TargetType:  audit.TargetDocument,
+		TargetID:    &doc.ID,
+		IP:          r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Metadata:    map[string]any{"path": doc.Path, "reverted_to": revID.String(), "new_revision_id": doc.CurrentRevisionID.String()},
+	})
+
+	http.Redirect(w, r, "/docs/"+doc.Path, http.StatusSeeOther)
+}
+
+func (s *Server) handleDocDiffByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenant := auth.TenantFromContext(ctx)
+
+	docID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
+	if errors.Is(err, docs.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to get document", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse from and to revision IDs
+	fromIDStr := r.URL.Query().Get("from")
+	toIDStr := r.URL.Query().Get("to")
+
+	if fromIDStr == "" || toIDStr == "" {
+		http.Error(w, "Missing from or to parameters", http.StatusBadRequest)
+		return
+	}
+
+	fromID, err := uuid.Parse(fromIDStr)
+	if err != nil {
+		http.Error(w, "Invalid from revision ID", http.StatusBadRequest)
+		return
+	}
+
+	toID, err := uuid.Parse(toIDStr)
+	if err != nil {
+		http.Error(w, "Invalid to revision ID", http.StatusBadRequest)
+		return
+	}
+
+	fromRev, err := s.docs.GetRevision(ctx, tenant.ID, fromID)
+	if err != nil {
+		http.Error(w, "From revision not found", http.StatusNotFound)
+		return
+	}
+
+	toRev, err := s.docs.GetRevision(ctx, tenant.ID, toID)
+	if err != nil {
+		http.Error(w, "To revision not found", http.StatusNotFound)
+		return
+	}
+
+	// Compute diff
+	diff := docs.ComputeDiff(fromRev.BodyMarkdown, toRev.BodyMarkdown)
+
+	pageData := DocPageData{
+		PageData:     s.newPageData(r),
+		Document:     doc,
+		FromRevision: fromRev,
+		ToRevision:   toRev,
+		Diff:         diff,
+	}
+	pageData.Title = "Diff - " + doc.Title
+
+	s.templates.ExecuteTemplate(w, "doc_diff.html", pageData)
+}
+
+func (s *Server) handleDocRevisionByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenant := auth.TenantFromContext(ctx)
+
+	docID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	revID, err := uuid.Parse(chi.URLParam(r, "revID"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
+	if errors.Is(err, docs.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to get document", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	rev, err := s.docs.GetRevision(ctx, tenant.ID, revID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if rev.DocumentID != doc.ID {
+		http.NotFound(w, r)
+		return
+	}
+
+	var renderedBody template.HTML
+	rendered, err := docs.RenderMarkdown(rev.BodyMarkdown)
+	if err != nil {
+		slog.Error("failed to render markdown", "error", err)
+	}
+	renderedBody = template.HTML(rendered)
+
+	pageData := DocPageData{
+		PageData:     s.newPageData(r),
+		Document:     doc,
+		RenderedBody: renderedBody,
+		Revisions:    []docs.Revision{*rev},
+	}
+	pageData.Title = doc.Title + " (Revision) - Docstor"
+
+	s.templates.ExecuteTemplate(w, "doc_revision.html", pageData)
 }

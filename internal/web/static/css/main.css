@@ -639,3 +639,160 @@ code {
     outline: none;
     border-color: var(--color-primary);
 }
+
+/* Diff view styles */
+.diff-info {
+    margin-bottom: 16px;
+}
+
+.diff-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.diff-from, .diff-to {
+    flex: 1;
+    min-width: 200px;
+}
+
+.diff-from strong, .diff-to strong {
+    color: var(--color-text-muted);
+}
+
+.diff-from em, .diff-to em {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.diff-stats {
+    display: flex;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.diff-stats .additions {
+    color: #22c55e;
+}
+
+.diff-stats .deletions {
+    color: #ef4444;
+}
+
+.diff-container {
+    overflow-x: auto;
+}
+
+.diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.diff-table td {
+    padding: 0;
+    vertical-align: top;
+    border: none;
+}
+
+.diff-line {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.diff-line.diff-equal {
+    background: transparent;
+}
+
+.diff-line.diff-insert {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.diff-line.diff-delete {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.diff-line .line-num {
+    width: 50px;
+    min-width: 50px;
+    text-align: right;
+    padding: 4px 8px;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+    user-select: none;
+}
+
+.diff-line .line-marker {
+    width: 20px;
+    min-width: 20px;
+    text-align: center;
+    padding: 4px 0;
+    font-weight: 600;
+}
+
+.diff-line.diff-insert .line-marker {
+    color: #22c55e;
+}
+
+.diff-line.diff-delete .line-marker {
+    color: #ef4444;
+}
+
+.diff-line .line-content {
+    padding: 4px 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.diff-line .line-content pre {
+    margin: 0;
+    font-family: inherit;
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+
+/* Diff form */
+.diff-form .form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.diff-form .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Actions cell in tables */
+.actions-cell {
+    white-space: nowrap;
+}
+
+.actions-cell form {
+    display: inline-block;
+    margin-left: 4px;
+}
+
+/* Small buttons */
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Block button */
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+/* Alert info style */
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: var(--color-text);
+}
