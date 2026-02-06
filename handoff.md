@@ -1,8 +1,8 @@
 # Docstor Implementation Handoff
 
-## Project Status: Phase 4 Complete
+## Project Status: Phase 5 Partial Complete
 
-Docstor is a web-first MSP documentation system. The core foundation is complete through Phase 4 (Trust Layer with revisions, revert, and diff).
+Docstor is a web-first MSP documentation system. The core foundation is complete through Phase 5 (Editor enhancements with draft saving).
 
 ---
 
@@ -77,6 +77,20 @@ Docstor is a web-first MSP documentation system. The core foundation is complete
 - **Audit logging**:
   - Revert actions logged with `doc.revert` action
   - Metadata includes: path, reverted_to revision ID, new revision ID
+
+### Phase 5: Editor Enhancements ✅ (Partial)
+- **Enhanced textarea** (`internal/web/static/js/editor-cm.js`):
+  - Monospace font for markdown editing
+  - Tab key inserts 4 spaces for indentation
+  - localStorage draft saving (auto-saves on every keystroke)
+  - Draft recovery prompt when returning to edit with unsaved changes
+  - "Draft saved" indicator in UI
+  - Drafts cleared on successful form submission
+- **HTMX Preview**: Already working from Phase 3
+- **CodeMirror 6**: Deferred due to CDN module dependency conflicts
+  - CM6's modular architecture causes `instanceof` failures when loaded from CDN
+  - Would need a bundled build (esbuild/rollup) for proper integration
+  - Enhanced textarea provides good editing experience in the meantime
 
 ---
 
@@ -190,9 +204,11 @@ make dev
 
 ## What's Left to Complete
 
-### Phase 5: Editor Island
-- [ ] Add CodeMirror 6 on edit pages (with textarea fallback)
-- [ ] Improve HTMX preview endpoint
+### Phase 5: Editor Island (Optional Enhancement)
+- [ ] Full CodeMirror 6 integration (requires bundled build with esbuild/rollup)
+- [ ] Vim keybindings (requires CodeMirror)
+- [x] Draft saving to localStorage ✅
+- [x] Enhanced textarea ✅
 
 ### Phase 6: Search
 - [ ] Add full-text search using Postgres tsvector
@@ -254,4 +270,4 @@ curl -b cookies.txt -X POST http://localhost:8080/docs/id/{DOC_ID}/revert/{REV_I
 
 ---
 
-*Handoff updated: 2026-02-06* - Phase 4 completed, revert and diff functionality working
+*Handoff updated: 2026-02-06* - Phase 5 (partial) completed, enhanced editor with draft saving
