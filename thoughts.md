@@ -37,18 +37,27 @@
 
 ## Remaining Work
 
-### Phase 5 - Editor Island ✅ (Partial)
-**Status**: Complete (enhanced textarea, CodeMirror deferred)
+### Phase 5 - Editor Island ✅
+**Status**: Complete
 
 **Implemented:**
-- Enhanced textarea with monospace font
+- Enhanced textarea with monospace font (fallback)
 - localStorage draft saving with recovery
 - Tab key indentation support
-- HTMX preview already worked from Phase 3
+- HTMX preview from Phase 3
 
-**Deferred:**
-- Full CodeMirror 6 integration (requires bundled build)
-- Vim keybindings (requires CodeMirror)
+### Phase 7.5 - CodeMirror 6 Editor ✅
+**Status**: Complete
+
+**Implemented:**
+- esbuild bundle for CM6 (editor-bundle/)
+- codemirror-bundle.js (686KB) with all dependencies
+- Markdown syntax highlighting
+- Vim mode toggle (persisted in localStorage)
+- Line numbers, code folding, bracket matching
+- Search (Ctrl+F), history (undo/redo)
+- Light/dark theme support
+- Falls back to enhanced textarea if bundle fails
 
 ### Phase 6 - Search ✅
 **Status**: Complete
@@ -169,11 +178,6 @@ Phases 0-7 are complete. The MVP includes:
 - Audit logging for all meaningful actions
 
 ## Remaining Work (Post-MVP)
-
-### Phase 7.5 - CodeMirror Editor (Deferred)
-- Build proper CM6 bundle with esbuild
-- Vim keybindings
-- Enhanced syntax highlighting
 
 ### Phase 8 - Attachments + Evidence Bundles
 ### Phase 9 - Templates + Checklists
