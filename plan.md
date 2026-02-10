@@ -686,16 +686,16 @@ Conventions used below:
 
 ## Post-MVP Phases (approved roadmap, not required for MVP)
 
-### Phase 8 — Attachments + evidence bundles
+### Phase 8 — Attachments + evidence bundles ✅ COMPLETE
 
-**PR-080: Attachments schema + storage interface (local disk)**
-**PR-081: Upload UI + link attachments to revisions/docs**
-**PR-082: Evidence bundles + export zip**
+**PR-080: Attachments schema + storage interface (local disk)** ✅
+**PR-081: Upload UI + link attachments to revisions/docs** ✅
+**PR-082: Evidence bundles + export zip** ✅
 Acceptance: uploads permission-checked; downloads audited; evidence ties to specific revisions.
 
 ### Phase 9 — Templates + checklists
 
-**PR-090: Templates schema + “create from template”**
+**PR-090: Templates schema + "create from template"**
 **PR-091: Checklist library + checklist instances**
 Acceptance: spawn a runbook/checklist in under a minute; track completion.
 
@@ -726,10 +726,86 @@ Acceptance: adds sites without breaking existing client/doc URLs.
 
 ---
 
+## UX/UI Overhaul Phases
+
+Identified from full-app UX test on Feb 10, 2026.
+
+### Phase A — Critical UX Fixes (2-3 hours)
+
+**A-1: Add Attachments button to document view page**
+- Users have no way to access attachments from the doc view
+- Add button alongside Edit/History in doc action bar
+
+**A-2: Fix mobile responsive layout**
+- Sidebar doesn't collapse on narrow viewports
+- Add hamburger menu, collapsible sidebar
+- Tables overflow on mobile — add horizontal scroll
+- Media queries at 768px and 1024px breakpoints
+
+**A-3: Fix form submission issue (forms landing on search)**
+- Some form submissions redirect to the search page
+- Root cause: topbar search form may be wrapping/intercepting other forms
+- Fix: ensure all forms are properly isolated
+
+**A-4: Fix evidence bundle "Add File" UX**
+- Currently requires manually entering attachment UUID
+- Replace with searchable attachment picker
+- Show attachment filename, date, and size in picker
+
+### Phase B — High Priority UX (2-3 hours)
+
+**B-1: Sidebar active state**
+- No visual indicator of current section
+- Add `.active` class based on URL prefix matching
+
+**B-2: Flash messages (success/error feedback)**
+- No feedback after form submissions
+- Add session-based flash message system
+- Show success (green), error (red), info (blue) banners
+
+**B-3: Fix/implement client filter dropdown**
+- "All Clients" dropdown in topbar does nothing
+- Either implement filtering or remove the dropdown
+
+**B-4: Unify search UX**
+- Topbar search and search page are disconnected
+- Topbar search should redirect to /search?q=...
+
+### Phase C — Visual Polish (2-3 hours)
+
+**C-1: Consistent breadcrumbs on all pages**
+- Some pages have breadcrumbs, some don't
+- Add standard breadcrumb component to: docs list, edit, clients, runbooks
+
+**C-2: Table styling improvements**
+- Add row hover states, zebra striping, better borders
+- Compact header styling
+
+**C-3: Empty state improvements**
+- Replace plain text with styled empty states
+- Add icons and prominent "Create" CTAs
+
+**C-4: Loading states on forms**
+- Disable submit buttons during submission
+- Show spinner or "Saving..." text
+
+**C-5: CSS variables for consistent theming**
+
+### Phase D — Nice to Have (ongoing)
+
+**D-1: Favicon**
+**D-2: Keyboard shortcuts** (Ctrl+S save, Ctrl+K search, Esc cancel)
+**D-3: Better code block styling** (syntax highlighting, copy button)
+**D-4: Consistent date formatting** (relative: "2h ago" or standardized)
+**D-5: Drag-and-drop file upload**
+**D-6: Image/PDF preview before download**
+**D-7: Confirmation dialogs on destructive actions**
+
+---
+
 ## Hand-off Notes for Implementation
 
 * Keep PRs small and reviewable; favor vertical slices (schema + handler + template + tests).
 * Enforce tenant scoping in repository methods, not ad-hoc in handlers.
 * Every write path must add an audit entry (and tests should expect it where practical).
 * Do not expand JS beyond CodeMirror + tiny helpers; HTMX is for partial HTML, not app state.
-
