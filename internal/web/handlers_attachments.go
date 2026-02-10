@@ -3,6 +3,7 @@ package web
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -647,4 +648,44 @@ func formatSize(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// handleAttachmentsAPI returns a JSON list of all attachments for the tenant (for picker UI)
+// GET /api/attachments
+func (s *Server) handleAttachmentsAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	mem := auth.MembershipFromContext(ctx)
+	if mem == nil {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	atts, err := s.attachments.ListAll(ctx, mem.TenantID)
+	if err != nil {
+		slog.Error("list attachments", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	type attJSON struct {
+		ID          string `json:"id"`
+		Filename    string `json:"filename"`
+		ContentType string `json:"content_type"`
+		SizeBytes   int64  `json:"size_bytes"`
+		CreatedAt   string `json:"created_at"`
+	}
+
+	result := make([]attJSON, 0, len(atts))
+	for _, a := range atts {
+		result = append(result, attJSON{
+			ID:          a.ID.String(),
+			Filename:    a.Filename,
+			ContentType: a.ContentType,
+			SizeBytes:   a.SizeBytes,
+			CreatedAt:   a.CreatedAt.Format("Jan 2, 2006 3:04 PM"),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }

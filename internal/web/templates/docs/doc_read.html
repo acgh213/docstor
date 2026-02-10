@@ -17,6 +17,12 @@
                 {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
                 {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
 
+                <nav class="breadcrumbs">
+                    <a href="/docs">Docs</a>
+                    <span class="separator">/</span>
+                    {{.Document.Title}}
+                </nav>
+
                 <div class="doc-container">
                     <div class="doc-main">
                         <div class="page-header">
@@ -27,6 +33,7 @@
                                     <a href="/docs/id/{{.Document.ID}}/edit" class="btn btn-primary">Edit</a>
                                     {{end}}
                                     <a href="/docs/id/{{.Document.ID}}/history" class="btn btn-secondary">History</a>
+                                    <a href="/docs/id/{{.Document.ID}}/attachments" class="btn btn-secondary">Attachments</a>
                                 </div>
                             </div>
                             <div class="doc-meta">
@@ -115,6 +122,7 @@
             </div>
         </main>
     </div>
+{{template "page_scripts" .}}
 </body>
 </html>
 {{end}}

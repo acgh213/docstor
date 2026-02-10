@@ -1,5 +1,5 @@
 {{define "sidebar"}}
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h1 class="logo">Docstor</h1>
         {{if .Tenant}}
@@ -7,26 +7,27 @@
         {{end}}
     </div>
     <nav class="sidebar-nav">
-        <a href="/" class="nav-item">Dashboard</a>
-        <a href="/docs" class="nav-item">Docs</a>
-        <a href="/runbooks" class="nav-item">Runbooks</a>
-        <a href="/clients" class="nav-item">Clients</a>
-        <a href="/evidence-bundles" class="nav-item">Evidence Bundles</a>
-        <a href="/search" class="nav-item">Search</a>
+        <a href="/" class="nav-item" data-nav="dashboard">Dashboard</a>
+        <a href="/docs" class="nav-item" data-nav="docs">Docs</a>
+        <a href="/runbooks" class="nav-item" data-nav="runbooks">Runbooks</a>
+        <a href="/clients" class="nav-item" data-nav="clients">Clients</a>
+        <a href="/evidence-bundles" class="nav-item" data-nav="evidence-bundles">Evidence Bundles</a>
+        <a href="/search" class="nav-item" data-nav="search">Search</a>
     </nav>
 </aside>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 {{end}}
 
 {{define "topbar"}}
 <header class="topbar">
     <div class="topbar-left">
-        <select class="client-filter">
-            <option value="">All Clients</option>
-        </select>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
     </div>
     <div class="topbar-right">
         <form action="/search" method="get" class="search-form">
-            <input type="search" name="q" placeholder="Search..." class="search-input">
+            <input type="search" name="q" placeholder="Search docs..." class="search-input">
         </form>
         {{if .User}}
         <div class="user-menu">
@@ -40,4 +41,35 @@
         {{end}}
     </div>
 </header>
+{{end}}
+
+{{define "page_scripts"}}
+<script>
+// Sidebar toggle for mobile
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+
+// Active nav highlight
+(function() {
+    var path = window.location.pathname;
+    var navItems = document.querySelectorAll('.nav-item[data-nav]');
+    var best = null;
+    var bestLen = 0;
+    navItems.forEach(function(item) {
+        var href = item.getAttribute('href');
+        if (path === href || (href !== '/' && path.startsWith(href))) {
+            if (href.length > bestLen) {
+                best = item;
+                bestLen = href.length;
+            }
+        }
+    });
+    if (!best && path === '/') {
+        best = document.querySelector('.nav-item[data-nav="dashboard"]');
+    }
+    if (best) best.classList.add('active');
+})();
+</script>
 {{end}}

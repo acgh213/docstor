@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}} | Docstor</title>
+    <title>Attachments - {{.Title}} | Docstor</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
     {{$doc := .Content.Document}}
@@ -16,25 +15,32 @@
         <main class="main-content">
             {{template "topbar" .}}
             <div class="content">
-                <nav class="breadcrumb">
-                    <a href="/docs">Docs</a> /
-                    <a href="/docs/{{$doc.Path}}">{{$doc.Title}}</a> /
+                <nav class="breadcrumbs">
+                    <a href="/docs">Docs</a>
+                    <span class="separator">/</span>
+                    <a href="/docs/{{$doc.Path}}">{{$doc.Title}}</a>
+                    <span class="separator">/</span>
                     Attachments
                 </nav>
 
                 <header class="page-header">
-                    <h1>Attachments</h1>
-                    <p class="subtitle">{{$doc.Title}}</p>
+                    <div>
+                        <h2>Attachments</h2>
+                        <p class="text-muted">{{$doc.Title}}</p>
+                    </div>
+                    <div class="page-actions">
+                        <a href="/docs/{{$doc.Path}}" class="btn btn-secondary">← Back to Document</a>
+                    </div>
                 </header>
 
                 {{if .Membership.IsEditor}}
                 <div class="card">
-                    <h2>Upload Attachment</h2>
-                    <form action="/attachments/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+                    <h3>Upload Attachment</h3>
+                    <form action="/attachments/upload" method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="document_id" value="{{$doc.ID}}">
                         <div class="form-group">
                             <label for="file">Choose file</label>
-                            <input type="file" id="file" name="file" required>
+                            <input type="file" id="file" name="file" required class="form-control" style="max-width:400px;">
                         </div>
                         <button type="submit" class="btn btn-primary">Upload</button>
                     </form>
@@ -42,9 +48,10 @@
                 {{end}}
 
                 <div class="card">
-                    <h2>Attached Files</h2>
+                    <h3>Attached Files ({{len $attachments}})</h3>
                     {{if $attachments}}
-                    <table class="table">
+                    <div class="table-responsive">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Filename</th>
@@ -56,16 +63,16 @@
                         </thead>
                         <tbody>
                             {{range $attachments}}
-                            <tr id="att-{{.ID}}">
+                            <tr>
                                 <td><a href="/attachments/{{.ID}}">{{.Filename}}</a></td>
                                 <td>{{.ContentType}}</td>
                                 <td>{{formatSize .SizeBytes}}</td>
-                                <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
-                                <td>
+                                <td>{{.CreatedAt.Format "Jan 2, 2006 3:04 PM"}}</td>
+                                <td class="actions-cell">
                                     <a href="/attachments/{{.ID}}" class="btn btn-sm btn-secondary">Download</a>
                                     {{if $.Membership.IsEditor}}
                                     <form action="/docs/id/{{$doc.ID}}/attachments/{{.ID}}/unlink" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Unlink this attachment?')">Unlink</button>
+                                        <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Unlink this attachment?')">Unlink</button>
                                     </form>
                                     {{end}}
                                 </td>
@@ -73,17 +80,20 @@
                             {{end}}
                         </tbody>
                     </table>
+                    </div>
                     {{else}}
-                    <p class="empty-state">No attachments yet.</p>
+                    <div class="empty-state">
+                        <p>No attachments yet.</p>
+                        {{if .Membership.IsEditor}}
+                        <p class="text-muted">Use the upload form above to attach files to this document.</p>
+                        {{end}}
+                    </div>
                     {{end}}
-                </div>
-
-                <div class="actions">
-                    <a href="/docs/{{$doc.Path}}" class="btn btn-secondary">← Back to Document</a>
                 </div>
             </div>
         </main>
     </div>
+{{template "page_scripts" .}}
 </body>
 </html>
 {{end}}

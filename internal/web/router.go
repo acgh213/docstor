@@ -133,6 +133,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		// Attachments
 		r.Post("/attachments/upload", s.handleAttachmentUpload)
 		r.Get("/attachments/{id}", s.handleAttachmentDownload)
+		r.Get("/api/attachments", s.handleAttachmentsAPI)
 
 		// Evidence Bundles
 		r.Route("/evidence-bundles", func(r chi.Router) {

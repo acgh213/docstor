@@ -126,6 +126,14 @@ func (r *Repo) ListByDocument(ctx context.Context, tenantID, documentID uuid.UUI
 	return r.queryAttachments(ctx, query, tenantID, documentID)
 }
 
+// ListAll lists all attachments for a tenant (most recent first)
+func (r *Repo) ListAll(ctx context.Context, tenantID uuid.UUID) ([]*Attachment, error) {
+	return r.queryAttachments(ctx, `
+		SELECT id, tenant_id, filename, content_type, size_bytes, sha256, storage_key, created_by, created_at
+		FROM attachments WHERE tenant_id = $1
+		ORDER BY created_at DESC LIMIT 200`, tenantID)
+}
+
 func (r *Repo) queryAttachments(ctx context.Context, query string, args ...any) ([]*Attachment, error) {
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} | Docstor</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
     {{$bundle := .Content.Bundle}}
@@ -16,32 +15,34 @@
         <main class="main-content">
             {{template "topbar" .}}
             <div class="content">
-                <nav class="breadcrumb">
-                    <a href="/evidence-bundles">Evidence Bundles</a> /
+                <nav class="breadcrumbs">
+                    <a href="/evidence-bundles">Evidence Bundles</a>
+                    <span class="separator">/</span>
                     {{$bundle.Name}}
                 </nav>
 
                 <header class="page-header">
                     <div>
-                        <h1>{{$bundle.Name}}</h1>
+                        <h2>{{$bundle.Name}}</h2>
                         {{if $bundle.Description}}
-                        <p class="subtitle">{{$bundle.Description}}</p>
+                        <p class="text-muted">{{$bundle.Description}}</p>
                         {{end}}
                     </div>
-                    <div class="header-actions">
+                    <div class="page-actions">
                         <a href="/evidence-bundles/{{$bundle.ID}}/export" class="btn btn-primary">Export ZIP</a>
                         {{if .Membership.IsEditor}}
                         <form action="/evidence-bundles/{{$bundle.ID}}/delete" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this bundle? Files will not be deleted.')">Delete Bundle</button>
+                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Delete this bundle? Files will not be deleted.')">Delete Bundle</button>
                         </form>
                         {{end}}
                     </div>
                 </header>
 
                 <div class="card">
-                    <h2>Files in Bundle ({{len $items}})</h2>
+                    <h3>Files in Bundle ({{len $items}})</h3>
                     {{if $items}}
-                    <table class="table">
+                    <div class="table-responsive">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Filename</th>
@@ -53,16 +54,16 @@
                         </thead>
                         <tbody>
                             {{range $items}}
-                            <tr id="item-{{.ID}}">
+                            <tr>
                                 <td><a href="/attachments/{{.AttachmentID}}">{{.Attachment.Filename}}</a></td>
                                 <td>{{.Attachment.ContentType}}</td>
                                 <td>{{formatSize .Attachment.SizeBytes}}</td>
-                                <td>{{if .Note}}{{.Note}}{{else}}<em class="text-muted">-</em>{{end}}</td>
-                                <td>
+                                <td>{{if .Note}}{{.Note}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                                <td class="actions-cell">
                                     <a href="/attachments/{{.AttachmentID}}" class="btn btn-sm btn-secondary">Download</a>
                                     {{if $.Membership.IsEditor}}
                                     <form action="/evidence-bundles/{{$bundle.ID}}/items/{{.AttachmentID}}/remove" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove from bundle?')">Remove</button>
+                                        <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Remove from bundle?')">Remove</button>
                                     </form>
                                     {{end}}
                                 </td>
@@ -70,34 +71,39 @@
                             {{end}}
                         </tbody>
                     </table>
+                    </div>
                     {{else}}
-                    <p class="empty-state">No files in this bundle yet.</p>
+                    <div class="empty-state">
+                        <p>No files in this bundle yet.</p>
+                        <p class="text-muted">Upload attachments to documents first, then add them here.</p>
+                    </div>
                     {{end}}
                 </div>
 
                 {{if .Membership.IsEditor}}
                 <div class="card">
-                    <h2>Add File to Bundle</h2>
-                    <form action="/evidence-bundles/{{$bundle.ID}}/items" method="POST" class="form-inline">
+                    <h3>Add File to Bundle</h3>
+                    <form action="/evidence-bundles/{{$bundle.ID}}/items" method="POST">
                         <div class="form-group">
-                            <label for="attachment_id">Attachment ID</label>
-                            <input type="text" id="attachment_id" name="attachment_id" required
-                                   placeholder="UUID of attachment">
+                            <label for="attachment_id">Select Attachment</label>
+                            <select id="attachment_id" name="attachment_id" required class="form-control" style="max-width:500px;">
+                                <option value="">— Choose an attachment —</option>
+                            </select>
+                            <small class="form-help">Loading attachments...</small>
                         </div>
                         <div class="form-group">
                             <label for="note">Note (optional)</label>
-                            <input type="text" id="note" name="note"
-                                   placeholder="e.g., Firewall config backup">
+                            <input type="text" id="note" name="note" class="form-control" style="max-width:500px;"
+                                   placeholder="e.g., Firewall config backup from Jan 2026">
                         </div>
                         <button type="submit" class="btn btn-primary">Add to Bundle</button>
                     </form>
-                    <p class="help-text">Copy the attachment ID from the document's attachment page.</p>
                 </div>
                 {{end}}
 
-                <div class="card bundle-info">
+                <div class="card">
                     <h3>Bundle Info</h3>
-                    <dl>
+                    <dl class="detail-list">
                         <dt>Created</dt>
                         <dd>{{$bundle.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
                         <dt>Total Files</dt>
@@ -107,6 +113,33 @@
             </div>
         </main>
     </div>
+{{template "page_scripts" .}}
+<script>
+// Load attachments into the picker
+(function() {
+    var sel = document.getElementById('attachment_id');
+    var help = sel ? sel.parentElement.querySelector('.form-help') : null;
+    if (!sel) return;
+    fetch('/api/attachments')
+        .then(function(r) { return r.json(); })
+        .then(function(atts) {
+            if (help) help.textContent = atts.length + ' attachment(s) available';
+            atts.forEach(function(a) {
+                var opt = document.createElement('option');
+                opt.value = a.id;
+                var size = a.size_bytes;
+                var sizeStr = size < 1024 ? size + ' B' :
+                    size < 1048576 ? (size/1024).toFixed(1) + ' KB' :
+                    (size/1048576).toFixed(1) + ' MB';
+                opt.textContent = a.filename + ' (' + sizeStr + ', ' + a.created_at + ')';
+                sel.appendChild(opt);
+            });
+        })
+        .catch(function() {
+            if (help) help.textContent = 'Failed to load attachments';
+        });
+})();
+</script>
 </body>
 </html>
 {{end}}

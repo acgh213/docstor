@@ -20,6 +20,14 @@
                 {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
                 {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
 
+                <nav class="breadcrumbs">
+                    <a href="/docs">Docs</a>
+                    <span class="separator">/</span>
+                    <a href="/docs/{{.Document.Path}}">{{.Document.Title}}</a>
+                    <span class="separator">/</span>
+                    Edit
+                </nav>
+
                 <div class="page-header">
                     <div class="page-header-row">
                         <h2>Edit: {{.Document.Title}}</h2>
@@ -67,6 +75,7 @@
             </div>
         </main>
     </div>
+{{template "page_scripts" .}}
 </body>
 </html>
 {{end}}
