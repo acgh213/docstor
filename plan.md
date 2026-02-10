@@ -730,7 +730,7 @@ Acceptance: adds sites without breaking existing client/doc URLs.
 
 Identified from full-app UX test on Feb 10, 2026.
 
-### Phase A — Critical UX Fixes (2-3 hours)
+### Phase A — Critical UX Fixes ✅ COMPLETE
 
 **A-1: Add Attachments button to document view page**
 - Users have no way to access attachments from the doc view
