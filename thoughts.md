@@ -1,6 +1,6 @@
 # Docstor Implementation Progress
 
-## Current Status: Phase 5 Complete (Partial)
+## Current Status: Phase 7 Complete (MVP)
 
 ## Completed Phases
 
@@ -50,14 +50,34 @@
 - Full CodeMirror 6 integration (requires bundled build)
 - Vim keybindings (requires CodeMirror)
 
-### Phase 6 - Search (Not Started)
-- Full-text search using Postgres tsvector
-- Search UI with filters (client, doc_type, owner)
+### Phase 6 - Search ✅
+**Status**: Complete
 
-### Phase 7 - Living Runbooks (Not Started)
-- Runbook verification workflow
-- Overdue runbooks dashboard
-- Verification interval tracking
+**Implemented:**
+- Migration adds tsvector column with GIN index to documents
+- Trigger auto-updates search vector on document changes
+- Weighted search (title A, path B, body C)
+- Search repository with filters (client_id, doc_type, owner_id)
+- ts_headline for highlighted snippets
+- Search UI with filters dropdown
+- Results show highlights, metadata, badges
+
+### Phase 7 - Living Runbooks ✅
+**Status**: Complete
+
+**Implemented:**
+- runbooks package with Repository for runbook_status operations
+- EnsureStatus creates runbook_status on first verify
+- Verify action stamps last_verified_at, computes next_due_at
+- UpdateInterval for changing verification cadence
+- ListOverdue/ListUnowned/ListRecentlyVerified queries
+- Runbooks dashboard (/runbooks) with three sections:
+  - Overdue (next_due_at < NOW())
+  - Unowned (owner_user_id IS NULL)
+  - Recently Verified
+- Runbook Status card on doc_read page for runbooks
+- Mark as Verified button
+- Audit logging for verification actions
 
 ## Key Files Added/Modified This Session
 
@@ -137,37 +157,26 @@ This meets the spirit of plan.md's Phase 5 acceptance criteria:
 
 ---
 
-## Phase 6 Implementation Notes (Search)
+## MVP Complete!
 
-### Approach
-- Add tsvector column to documents table for full-text search
-- Index title, path, and current revision body
-- Create search endpoint with filters (client, doc_type)
-- Search results page with highlighting
+Phases 0-7 are complete. The MVP includes:
+- Tenant isolation + role gating
+- Client management
+- Documents with revisions, history, diff, revert
+- Server-side markdown rendering + sanitization
+- Full-text search with PostgreSQL tsvector
+- Living runbooks with verification workflow + overdue dashboard
+- Audit logging for all meaningful actions
 
-### Migration Plan
-1. Add `search_vector` tsvector column to documents
-2. Create GIN index on search_vector
-3. Add trigger to update search_vector on document/revision changes
-4. Implement search repository method
-5. Add search handler and template
+## Remaining Work (Post-MVP)
 
----
+### Phase 7.5 - CodeMirror Editor (Deferred)
+- Build proper CM6 bundle with esbuild
+- Vim keybindings
+- Enhanced syntax highlighting
 
-## Phase 7 Implementation Notes (Living Runbooks)
-
-### Approach
-- runbook_status table already exists in schema
-- Need to implement:
-  - Runbook verification workflow (POST /docs/id/{id}/verify)
-  - Runbook dashboard (/runbooks) showing overdue, unowned
-  - UI for setting verification interval
-  - Display verification status on doc read page for runbooks
-
-### Key Features
-1. Verify action stamps last_verified_at and computes next_due_at
-2. Dashboard shows:
-   - Overdue runbooks (next_due_at < NOW())
-   - Unowned runbooks (owner_user_id IS NULL)
-   - Recently verified
-3. Verification interval setting in edit/metadata
+### Phase 8 - Attachments + Evidence Bundles
+### Phase 9 - Templates + Checklists
+### Phase 10 - CMDB-lite + Live Blocks
+### Phase 11 - Known Issues + Incidents
+### Phase 12 - Doc Health Dashboards
