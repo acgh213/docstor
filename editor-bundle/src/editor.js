@@ -1,125 +1,236 @@
 /**
  * Docstor CodeMirror 6 Editor Bundle
  * 
- * This bundles all CodeMirror 6 dependencies into a single IIFE
- * that can be loaded in the browser without ES module issues.
+ * Bundles CM6 with markdown-aware syntax highlighting,
+ * vim mode, and light/dark themes.
  */
 
 import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, rectangularSelection, crosshairCursor, dropCursor } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, defaultHighlightStyle, bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { vim, Vim } from '@replit/codemirror-vim';
+import { tags } from '@lezer/highlight';
 
-// Theme - a simple dark theme
-const darkTheme = EditorView.theme({
-    '&': {
-        backgroundColor: '#1e1e1e',
-        color: '#d4d4d4'
-    },
-    '.cm-content': {
-        caretColor: '#aeafad'
-    },
-    '.cm-cursor, .cm-dropCursor': {
-        borderLeftColor: '#aeafad'
-    },
-    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-        backgroundColor: '#264f78'
-    },
-    '.cm-panels': {
-        backgroundColor: '#252526',
-        color: '#cccccc'
-    },
-    '.cm-panels.cm-panels-top': {
-        borderBottom: '1px solid #3c3c3c'
-    },
-    '.cm-searchMatch': {
-        backgroundColor: '#72a1ff59'
-    },
-    '.cm-searchMatch.cm-searchMatch-selected': {
-        backgroundColor: '#9aa0a688'
-    },
-    '.cm-activeLine': {
-        backgroundColor: '#2c2c2c'
-    },
-    '.cm-selectionMatch': {
-        backgroundColor: '#add6ff26'
-    },
-    '.cm-matchingBracket, .cm-nonmatchingBracket': {
-        backgroundColor: '#bad0f847',
-        outline: '1px solid #515a6b'
-    },
-    '.cm-gutters': {
-        backgroundColor: '#1e1e1e',
-        color: '#858585',
-        border: 'none'
-    },
-    '.cm-activeLineGutter': {
-        backgroundColor: '#2c2c2c'
-    },
-    '.cm-foldPlaceholder': {
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: '#ddd'
-    },
-    '.cm-tooltip': {
-        border: '1px solid #454545',
-        backgroundColor: '#252526'
-    },
-    '.cm-tooltip .cm-tooltip-arrow:before': {
-        borderTopColor: 'transparent',
-        borderBottomColor: 'transparent'
-    },
-    '.cm-tooltip .cm-tooltip-arrow:after': {
-        borderTopColor: '#252526',
-        borderBottomColor: '#252526'
-    },
-    '.cm-tooltip-autocomplete': {
-        '& > ul > li[aria-selected]': {
-            backgroundColor: '#094771',
-            color: '#fff'
-        }
-    }
-}, { dark: true });
+// ── Markdown-aware highlight style (light) ──────────────────────
+const markdownHighlightLight = HighlightStyle.define([
+    // Headings — distinct blue, bold, sized
+    { tag: tags.heading1, color: '#1a56db', fontWeight: '700', fontSize: '1.4em' },
+    { tag: tags.heading2, color: '#1e40af', fontWeight: '700', fontSize: '1.25em' },
+    { tag: tags.heading3, color: '#1e3a8a', fontWeight: '600', fontSize: '1.15em' },
+    { tag: tags.heading4, color: '#1e3a8a', fontWeight: '600' },
+    { tag: tags.heading5, color: '#1e3a8a', fontWeight: '600' },
+    { tag: tags.heading6, color: '#1e3a8a', fontWeight: '600' },
+    // Emphasis
+    { tag: tags.emphasis, fontStyle: 'italic', color: '#6b21a8' },
+    { tag: tags.strong, fontWeight: 'bold', color: '#9a3412' },
+    // Links
+    { tag: tags.link, color: '#2563eb', textDecoration: 'underline' },
+    { tag: tags.url, color: '#0369a1' },
+    // Code / monospace
+    { tag: tags.monospace, color: '#be123c', backgroundColor: 'rgba(220, 38, 38, 0.06)', borderRadius: '3px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
+    // Quotes
+    { tag: tags.quote, color: '#4b5563', fontStyle: 'italic' },
+    // Lists
+    { tag: tags.list, color: '#059669' },
+    // Meta / processing (the #, ##, -, *, ``` markers)
+    { tag: tags.processingInstruction, color: '#9ca3af' },
+    { tag: tags.meta, color: '#9ca3af' },
+    // Strikethrough
+    { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
+    // Generic content
+    { tag: tags.content, color: '#1f2937' },
+    // Punctuation / separator (horizontal rules, etc.)
+    { tag: tags.separator, color: '#d1d5db' },
+    // HTML in markdown
+    { tag: tags.angleBracket, color: '#9ca3af' },
+    { tag: tags.tagName, color: '#0891b2' },
+    { tag: tags.attributeName, color: '#059669' },
+    { tag: tags.attributeValue, color: '#be123c' },
+    // Comments (HTML comments)
+    { tag: tags.comment, color: '#9ca3af', fontStyle: 'italic' },
+]);
 
-// Light theme (default)
+// ── Markdown-aware highlight style (dark) ───────────────────────
+const markdownHighlightDark = HighlightStyle.define([
+    { tag: tags.heading1, color: '#60a5fa', fontWeight: '700', fontSize: '1.4em' },
+    { tag: tags.heading2, color: '#93bbfd', fontWeight: '700', fontSize: '1.25em' },
+    { tag: tags.heading3, color: '#a5b4fc', fontWeight: '600', fontSize: '1.15em' },
+    { tag: tags.heading4, color: '#a5b4fc', fontWeight: '600' },
+    { tag: tags.heading5, color: '#a5b4fc', fontWeight: '600' },
+    { tag: tags.heading6, color: '#a5b4fc', fontWeight: '600' },
+    { tag: tags.emphasis, fontStyle: 'italic', color: '#c084fc' },
+    { tag: tags.strong, fontWeight: 'bold', color: '#fb923c' },
+    { tag: tags.link, color: '#60a5fa', textDecoration: 'underline' },
+    { tag: tags.url, color: '#38bdf8' },
+    { tag: tags.monospace, color: '#f472b6', backgroundColor: 'rgba(244, 114, 182, 0.1)', borderRadius: '3px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
+    { tag: tags.quote, color: '#9ca3af', fontStyle: 'italic' },
+    { tag: tags.list, color: '#34d399' },
+    { tag: tags.processingInstruction, color: '#6b7280' },
+    { tag: tags.meta, color: '#6b7280' },
+    { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
+    { tag: tags.content, color: '#d1d5db' },
+    { tag: tags.separator, color: '#4b5563' },
+    { tag: tags.angleBracket, color: '#6b7280' },
+    { tag: tags.tagName, color: '#22d3ee' },
+    { tag: tags.attributeName, color: '#34d399' },
+    { tag: tags.attributeValue, color: '#f472b6' },
+    { tag: tags.comment, color: '#6b7280', fontStyle: 'italic' },
+]);
+
+// ── Light theme ─────────────────────────────────────────────────
 const lightTheme = EditorView.theme({
     '&': {
         backgroundColor: '#ffffff',
-        color: '#24292e'
+        color: '#1f2937',
+        fontSize: '14px',
     },
     '.cm-content': {
-        caretColor: '#24292e'
+        caretColor: '#1f2937',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+        lineHeight: '1.6',
+        padding: '8px 0',
     },
     '.cm-cursor, .cm-dropCursor': {
-        borderLeftColor: '#24292e'
+        borderLeftColor: '#1f2937',
+        borderLeftWidth: '2px',
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-        backgroundColor: '#b3d7ff'
+        backgroundColor: '#bfdbfe',
     },
     '.cm-activeLine': {
-        backgroundColor: '#f6f8fa'
+        backgroundColor: 'rgba(37, 99, 235, 0.04)',
     },
     '.cm-gutters': {
-        backgroundColor: '#f6f8fa',
-        color: '#6e7781',
+        backgroundColor: '#fafbfc',
+        color: '#9ca3af',
         border: 'none',
-        borderRight: '1px solid #d0d7de'
+        borderRight: '1px solid #e5e7eb',
+        fontSize: '13px',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
     },
     '.cm-activeLineGutter': {
-        backgroundColor: '#eaeef2'
-    }
+        backgroundColor: 'rgba(37, 99, 235, 0.06)',
+        color: '#6b7280',
+    },
+    '.cm-foldPlaceholder': {
+        backgroundColor: '#f3f4f6',
+        border: '1px solid #d1d5db',
+        color: '#6b7280',
+        borderRadius: '3px',
+        padding: '0 4px',
+    },
+    '.cm-searchMatch': {
+        backgroundColor: '#fef08a',
+        borderRadius: '2px',
+    },
+    '.cm-searchMatch.cm-searchMatch-selected': {
+        backgroundColor: '#fbbf24',
+    },
+    '.cm-selectionMatch': {
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+    },
+    '.cm-matchingBracket': {
+        backgroundColor: 'rgba(37, 99, 235, 0.12)',
+        outline: '1px solid rgba(37, 99, 235, 0.3)',
+    },
+    '.cm-panels': {
+        backgroundColor: '#f9fafb',
+        color: '#1f2937',
+        borderBottom: '1px solid #e5e7eb',
+    },
+    '.cm-tooltip': {
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    },
+    '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+        backgroundColor: '#2563eb',
+        color: '#ffffff',
+    },
 }, { dark: false });
 
-// Compartment for vim mode (can be toggled)
+// ── Dark theme ──────────────────────────────────────────────────
+const darkTheme = EditorView.theme({
+    '&': {
+        backgroundColor: '#1a1b26',
+        color: '#d1d5db',
+        fontSize: '14px',
+    },
+    '.cm-content': {
+        caretColor: '#aeafad',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+        lineHeight: '1.6',
+        padding: '8px 0',
+    },
+    '.cm-cursor, .cm-dropCursor': {
+        borderLeftColor: '#aeafad',
+        borderLeftWidth: '2px',
+    },
+    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
+        backgroundColor: '#264f78',
+    },
+    '.cm-activeLine': {
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    },
+    '.cm-gutters': {
+        backgroundColor: '#1a1b26',
+        color: '#4b5563',
+        border: 'none',
+        borderRight: '1px solid #2d2f3d',
+        fontSize: '13px',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    },
+    '.cm-activeLineGutter': {
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        color: '#9ca3af',
+    },
+    '.cm-foldPlaceholder': {
+        backgroundColor: '#2d2f3d',
+        border: 'none',
+        color: '#6b7280',
+    },
+    '.cm-searchMatch': {
+        backgroundColor: '#72a1ff59',
+    },
+    '.cm-searchMatch.cm-searchMatch-selected': {
+        backgroundColor: '#9aa0a688',
+    },
+    '.cm-selectionMatch': {
+        backgroundColor: '#add6ff26',
+    },
+    '.cm-matchingBracket, .cm-nonmatchingBracket': {
+        backgroundColor: '#bad0f847',
+        outline: '1px solid #515a6b',
+    },
+    '.cm-panels': {
+        backgroundColor: '#252526',
+        color: '#cccccc',
+        borderBottom: '1px solid #3c3c3c',
+    },
+    '.cm-tooltip': {
+        border: '1px solid #454545',
+        backgroundColor: '#252526',
+        borderRadius: '6px',
+    },
+    '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+        backgroundColor: '#094771',
+        color: '#fff',
+    },
+}, { dark: true });
+
+// ── Compartments ────────────────────────────────────────────────
 const vimCompartment = new Compartment();
 const themeCompartment = new Compartment();
+const highlightCompartment = new Compartment();
 
 // Create editor configuration
 function createExtensions(options = {}) {
+    const isDark = options.dark;
     const extensions = [
         lineNumbers(),
         highlightActiveLineGutter(),
@@ -130,7 +241,11 @@ function createExtensions(options = {}) {
         dropCursor(),
         EditorState.allowMultipleSelections.of(true),
         indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        // Use our markdown-specific highlight style first, then default as fallback
+        highlightCompartment.of([
+            syntaxHighlighting(isDark ? markdownHighlightDark : markdownHighlightLight),
+            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        ]),
         bracketMatching(),
         closeBrackets(),
         autocompletion(),
@@ -147,11 +262,10 @@ function createExtensions(options = {}) {
         ]),
         markdown({ base: markdownLanguage }),
         EditorView.lineWrapping,
-        themeCompartment.of(options.dark ? darkTheme : lightTheme),
-        vimCompartment.of(options.vim ? vim() : [])
+        themeCompartment.of(isDark ? darkTheme : lightTheme),
+        vimCompartment.of(options.vim ? vim() : []),
     ];
     
-    // Add update listener if provided
     if (options.onUpdate) {
         extensions.push(EditorView.updateListener.of(update => {
             if (update.docChanged) {
@@ -163,7 +277,6 @@ function createExtensions(options = {}) {
     return extensions;
 }
 
-// Create an editor instance
 function createEditor(parent, options = {}) {
     const {
         content = '',
@@ -177,10 +290,7 @@ function createEditor(parent, options = {}) {
         extensions: createExtensions({ vim: enableVim, dark, onUpdate })
     });
     
-    const view = new EditorView({
-        state,
-        parent
-    });
+    const view = new EditorView({ state, parent });
     
     return {
         view,
@@ -197,7 +307,13 @@ function createEditor(parent, options = {}) {
         },
         toggleDark: (enable) => {
             view.dispatch({
-                effects: themeCompartment.reconfigure(enable ? darkTheme : lightTheme)
+                effects: [
+                    themeCompartment.reconfigure(enable ? darkTheme : lightTheme),
+                    highlightCompartment.reconfigure([
+                        syntaxHighlighting(enable ? markdownHighlightDark : markdownHighlightLight),
+                        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+                    ]),
+                ]
             });
         },
         focus: () => view.focus(),
@@ -205,5 +321,4 @@ function createEditor(parent, options = {}) {
     };
 }
 
-// Export for global use
 export { createEditor, EditorView, EditorState, vim, Vim };

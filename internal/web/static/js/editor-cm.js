@@ -123,7 +123,7 @@ function initCodeMirrorEditor() {
     const editor = DocstorEditor.createEditor(editorContainer, {
         content: currentContent,
         vim: vimEnabled,
-        dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+        dark: false,  // Docstor is light-mode; user can toggle via future dark mode preference
         onUpdate: (content) => {
             textarea.value = content;
             saveDraft(content);

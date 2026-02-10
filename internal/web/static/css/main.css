@@ -447,11 +447,13 @@ tr:hover td {
 
 /* Code element */
 code {
-    background: var(--color-bg);
+    background: #f1f5f9;
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: "SF Mono", Consolas, monospace;
-    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    color: #be123c;
+    border: 1px solid #e2e8f0;
 }
 
 /* Form rows */
@@ -553,27 +555,89 @@ code {
 }
 
 .markdown-body pre {
-    background: var(--color-bg);
+    background: #1e293b;
+    color: #e2e8f0;
     border-radius: var(--radius);
     padding: 16px;
     overflow-x: auto;
     margin: 0 0 16px 0;
+    border: 1px solid #334155;
+    position: relative;
 }
 
 .markdown-body pre code {
     background: none;
     padding: 0;
+    color: inherit;
+    border: none;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Copy button for code blocks */
+.markdown-body pre .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #94a3b8;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.markdown-body pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.markdown-body pre .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
 }
 
 .markdown-body blockquote {
     border-left: 4px solid var(--color-primary);
-    padding-left: 16px;
+    padding: 8px 16px;
     margin: 0 0 16px 0;
     color: var(--color-text-muted);
+    background: rgba(37, 99, 235, 0.03);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.markdown-body blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body hr {
+    border: none;
+    border-top: 2px solid var(--color-border);
+    margin: 24px 0;
 }
 
 .markdown-body table {
     margin-bottom: 16px;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.markdown-body table th {
+    background: var(--color-bg);
+    font-weight: 600;
+}
+
+.markdown-body table tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
 }
 
 .markdown-body img {

@@ -195,6 +195,14 @@ document.addEventListener('keydown', function(e) {
         var input = document.querySelector('.search-input');
         if (input) input.focus();
     }
+    // Ctrl+S or Cmd+S: save form (on edit pages)
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        var editForm = document.querySelector('form[action*="/save"]');
+        if (editForm) {
+            e.preventDefault();
+            editForm.submit();
+        }
+    }
     // Esc: close sidebar on mobile, close confirm dialog
     if (e.key === 'Escape') {
         var overlay = document.querySelector('.confirm-overlay');
@@ -203,5 +211,25 @@ document.addEventListener('keydown', function(e) {
         if (sidebar && sidebar.classList.contains('open')) toggleSidebar();
     }
 });
+
+// Copy button for code blocks in rendered markdown
+(function() {
+    document.querySelectorAll('.markdown-body pre').forEach(function(pre) {
+        var btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        btn.type = 'button';
+        btn.addEventListener('click', function() {
+            var code = pre.querySelector('code');
+            var text = code ? code.textContent : pre.textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+            });
+        });
+        pre.style.position = 'relative';
+        pre.appendChild(btn);
+    });
+})();
 </script>
 {{end}}
