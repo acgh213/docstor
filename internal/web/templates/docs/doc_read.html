@@ -48,6 +48,48 @@
                     </div>
 
                     <aside class="doc-sidebar">
+                        {{if eq .Document.DocType "runbook"}}
+                        <div class="card {{if .RunbookOverdue}}card-danger{{end}}">
+                            <h4>Runbook Status</h4>
+                            {{if .RunbookStatus}}
+                            <dl class="meta-list">
+                                <dt>Status</dt>
+                                <dd>
+                                    {{if .RunbookOverdue}}
+                                    <span class="badge badge-danger">Overdue</span>
+                                    {{else if .RunbookStatus.LastVerifiedAt}}
+                                    <span class="badge badge-success">Verified</span>
+                                    {{else}}
+                                    <span class="badge badge-warning">Not Verified</span>
+                                    {{end}}
+                                </dd>
+                                {{if .RunbookStatus.LastVerifiedAt}}
+                                <dt>Last Verified</dt>
+                                <dd>{{.RunbookStatus.LastVerifiedAt.Format "Jan 2, 2006"}}</dd>
+                                {{end}}
+                                {{if .RunbookStatus.NextDueAt}}
+                                <dt>Next Due</dt>
+                                <dd class="{{if .RunbookOverdue}}text-danger{{end}}">{{.RunbookStatus.NextDueAt.Format "Jan 2, 2006"}}</dd>
+                                {{end}}
+                                <dt>Interval</dt>
+                                <dd>{{.RunbookStatus.VerificationIntervalDays}} days</dd>
+                            </dl>
+                            {{if $.Membership.IsEditor}}
+                            <form action="/docs/id/{{.Document.ID}}/verify" method="POST" style="margin-top: 1rem;">
+                                <button type="submit" class="btn btn-success btn-block">Mark as Verified</button>
+                            </form>
+                            {{end}}
+                            {{else}}
+                            {{if $.Membership.IsEditor}}
+                            <p class="text-muted">Not yet configured for verification.</p>
+                            <form action="/docs/id/{{.Document.ID}}/verify" method="POST">
+                                <button type="submit" class="btn btn-success btn-block">Start Verification Tracking</button>
+                            </form>
+                            {{end}}
+                            {{end}}
+                        </div>
+                        {{end}}
+
                         <div class="card">
                             <h4>Document Info</h4>
                             <dl class="meta-list">

@@ -16,6 +16,7 @@ import (
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/runbooks"
 )
 
 //go:embed templates
@@ -33,6 +34,7 @@ type Server struct {
 	audit     *audit.Logger
 	clients   *clients.Repository
 	docs      *docs.Repository
+	runbooks  *runbooks.Repository
 }
 
 func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
@@ -41,6 +43,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	auditLog := audit.NewLogger(db)
 	clientsRepo := clients.NewRepository(db)
 	docsRepo := docs.NewRepository(db)
+	runbooksRepo := runbooks.NewRepository(db)
 
 	s := &Server{
 		db:       db,
@@ -50,6 +53,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		audit:    auditLog,
 		clients:  clientsRepo,
 		docs:     docsRepo,
+		runbooks: runbooksRepo,
 	}
 
 	if err := s.loadTemplates(); err != nil {
@@ -81,6 +85,12 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 
 		r.Get("/", s.handleDashboard)
 
+		// Search
+		r.Get("/search", s.handleSearch)
+
+		// Runbooks dashboard
+		r.Get("/runbooks", s.handleRunbooksDashboard)
+
 		// Documents
 		r.Get("/docs", s.handleDocsHomeV2)
 		r.Get("/docs/new", s.handleDocNew)
@@ -93,6 +103,8 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		r.Get("/docs/id/{id}/diff", s.handleDocDiffByID)
 		r.Get("/docs/id/{id}/revision/{revID}", s.handleDocRevisionByID)
 		r.Post("/docs/id/{id}/revert/{revID}", s.handleDocRevertByID)
+		r.Post("/docs/id/{id}/verify", s.handleRunbookVerify)
+		r.Post("/docs/id/{id}/interval", s.handleRunbookUpdateInterval)
 		// Document read by path (must be last)
 		r.Get("/docs/*", s.handleDocRead)
 
@@ -111,11 +123,19 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 }
 
 func (s *Server) loadTemplates() error {
-	tmpl, err := template.ParseFS(templatesFS,
+	funcMap := template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	}
+
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS,
 		"templates/layout/*.html",
 		"templates/docs/*.html",
 		"templates/auth/*.html",
 		"templates/clients/*.html",
+		"templates/search/*.html",
+		"templates/runbooks/*.html",
 	)
 	if err != nil {
 		return err

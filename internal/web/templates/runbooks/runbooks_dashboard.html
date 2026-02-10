@@ -1,0 +1,142 @@
+{{define "runbooks_dashboard.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+                {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
+
+                <div class="page-header">
+                    <h2>Runbooks Dashboard</h2>
+                    <div class="page-actions">
+                        <a href="/docs/new?type=runbook" class="btn btn-primary">New Runbook</a>
+                    </div>
+                </div>
+
+                {{if .Overdue}}
+                <div class="card runbooks-section">
+                    <h3>⚠️ Overdue ({{len .Overdue}})</h3>
+                    <p class="text-muted">These runbooks need verification</p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Client</th>
+                                <th>Owner</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Overdue}}
+                            <tr class="overdue-row">
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td>{{if .ClientName}}{{.ClientName}}{{else}}<span class="text-muted">-</span>{{end}}</td>
+                                <td>{{if .OwnerName}}{{.OwnerName}}{{else}}<span class="text-muted">Unowned</span>{{end}}</td>
+                                <td>
+                                    {{if .Status}}{{if .Status.NextDueAt}}
+                                    <span class="text-danger">{{.Status.NextDueAt.Format "Jan 2, 2006"}}</span>
+                                    {{end}}{{end}}
+                                </td>
+                                <td>
+                                    <form action="/docs/id/{{.DocumentID}}/verify" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-success">Verify Now</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .Unowned}}
+                <div class="card runbooks-section">
+                    <h3>👤 Unowned ({{len .Unowned}})</h3>
+                    <p class="text-muted">These runbooks need an owner assigned</p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Client</th>
+                                <th>Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Unowned}}
+                            <tr>
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td>{{if .ClientName}}{{.ClientName}}{{else}}<span class="text-muted">-</span>{{end}}</td>
+                                <td>{{.UpdatedAt.Format "Jan 2, 2006"}}</td>
+                                <td>
+                                    <a href="/docs/id/{{.DocumentID}}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .RecentlyVerified}}
+                <div class="card runbooks-section">
+                    <h3>✅ Recently Verified</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Client</th>
+                                <th>Verified At</th>
+                                <th>Next Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .RecentlyVerified}}
+                            <tr>
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td>{{if .ClientName}}{{.ClientName}}{{else}}<span class="text-muted">-</span>{{end}}</td>
+                                <td>
+                                    {{if .Status}}{{if .Status.LastVerifiedAt}}
+                                    {{.Status.LastVerifiedAt.Format "Jan 2, 2006"}}
+                                    {{end}}{{end}}
+                                </td>
+                                <td>
+                                    {{if .Status}}{{if .Status.NextDueAt}}
+                                    {{.Status.NextDueAt.Format "Jan 2, 2006"}}
+                                    {{end}}{{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if not .Overdue}}
+                {{if not .Unowned}}
+                {{if not .RecentlyVerified}}
+                <div class="card">
+                    <p class="text-muted">No runbooks yet. Create your first runbook to start tracking verification.</p>
+                    <a href="/docs/new?type=runbook" class="btn btn-primary">Create Runbook</a>
+                </div>
+                {{end}}
+                {{end}}
+                {{end}}
+
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

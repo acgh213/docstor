@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,17 +14,21 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/runbooks"
 )
 
 type DocPageData struct {
 	PageData
-	Document     *docs.Document
-	RenderedBody template.HTML
-	Revisions    []docs.Revision
-	Clients      []ClientOption
-	FromRevision *docs.Revision
-	ToRevision   *docs.Revision
-	Diff         *docs.DiffResult
+	Document       *docs.Document
+	RenderedBody   template.HTML
+	Revisions      []docs.Revision
+	Clients        []ClientOption
+	FromRevision   *docs.Revision
+	ToRevision     *docs.Revision
+	Diff           *docs.DiffResult
+	RunbookStatus  *runbooks.Status
+	RunbookOverdue bool
+	DefaultDocType string
 }
 
 type ClientOption struct {
@@ -90,6 +95,17 @@ func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
 	}
 	pageData.Title = doc.Title + " - Docstor"
 
+	// Load runbook status if this is a runbook
+	if doc.DocType == docs.DocTypeRunbook {
+		status, err := s.runbooks.GetStatus(ctx, tenant.ID, doc.ID)
+		if err == nil {
+			pageData.RunbookStatus = status
+			if status.NextDueAt != nil && status.NextDueAt.Before(time.Now()) {
+				pageData.RunbookOverdue = true
+			}
+		}
+	}
+
 	s.templates.ExecuteTemplate(w, "doc_read.html", pageData)
 }
 
@@ -101,6 +117,12 @@ func (s *Server) handleDocNew(w http.ResponseWriter, r *http.Request) {
 	if !membership.IsEditor() {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
+	}
+
+	// Check for type query param
+	defaultType := r.URL.Query().Get("type")
+	if defaultType != "runbook" {
+		defaultType = "doc"
 	}
 
 	// Load clients for dropdown
@@ -115,8 +137,9 @@ func (s *Server) handleDocNew(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageData := DocPageData{
-		PageData: s.newPageData(r),
-		Clients:  clientOptions,
+		PageData:       s.newPageData(r),
+		Clients:        clientOptions,
+		DefaultDocType: defaultType,
 	}
 	pageData.Title = "New Document - Docstor"
 

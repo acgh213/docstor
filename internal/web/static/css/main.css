@@ -838,3 +838,119 @@ code {
 .draft-recovery strong {
     margin-right: 4px;
 }
+
+/* Search styles */
+.search-filters-form .form-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.search-filters-form .form-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.search-input-large {
+    font-size: 16px;
+    padding: 12px 16px;
+}
+
+.results-count {
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+}
+
+.search-result-card {
+    margin-bottom: 16px;
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.result-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.result-path {
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.result-client {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.result-snippet {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.result-snippet mark {
+    background: rgba(251, 191, 36, 0.4);
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+.result-meta {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* Runbooks dashboard */
+.runbooks-section {
+    margin-bottom: 24px;
+}
+
+.runbooks-section h3 {
+    margin-top: 0;
+}
+
+.overdue-row {
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* Card variants */
+.card-danger {
+    border-color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* Badge variants */
+.badge-danger {
+    background: var(--color-danger);
+    color: white;
+}
+
+.badge-success {
+    background: var(--color-success);
+    color: white;
+}
+
+/* Text utilities */
+.text-danger {
+    color: var(--color-danger) !important;
+}
+
+/* Page header with actions */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.page-actions {
+    display: flex;
+    gap: 12px;
+}

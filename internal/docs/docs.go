@@ -511,3 +511,104 @@ func normalizePath(path string) string {
 	path = strings.TrimSuffix(path, "/")
 	return strings.ToLower(path)
 }
+
+// SearchResult represents a document search result with ranking info
+type SearchResult struct {
+	Document
+	Rank       float64
+	Headline   string // Highlighted snippet
+}
+
+// SearchFilters specifies optional filters for search
+type SearchFilters struct {
+	ClientID *uuid.UUID
+	DocType  *DocType
+	OwnerID  *uuid.UUID
+}
+
+// Search performs full-text search on documents
+func (r *Repository) Search(ctx context.Context, tenantID uuid.UUID, query string, filters SearchFilters, limit int) ([]SearchResult, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	// Build the search query with plainto_tsquery for simple queries
+	baseQuery := `
+		SELECT d.id, d.tenant_id, d.client_id, d.path, d.title, d.doc_type, d.sensitivity,
+		       d.owner_user_id, d.metadata_json, d.current_revision_id, d.created_by, d.created_at, d.updated_at,
+		       c.id, c.name, c.code,
+		       u.id, u.name, u.email,
+		       ts_rank(d.search_vector, plainto_tsquery('english', $2)) AS rank,
+		       ts_headline('english', COALESCE(rev.body_markdown, ''), plainto_tsquery('english', $2),
+		           'StartSel=<mark>, StopSel=</mark>, MaxWords=35, MinWords=15, MaxFragments=2') AS headline
+		FROM documents d
+		LEFT JOIN clients c ON d.client_id = c.id
+		LEFT JOIN users u ON d.owner_user_id = u.id
+		LEFT JOIN revisions rev ON d.current_revision_id = rev.id
+		WHERE d.tenant_id = $1
+		  AND d.search_vector @@ plainto_tsquery('english', $2)
+	`
+	args := []any{tenantID, query}
+	argIdx := 3
+
+	if filters.ClientID != nil {
+		baseQuery += fmt.Sprintf(" AND d.client_id = $%d", argIdx)
+		args = append(args, *filters.ClientID)
+		argIdx++
+	}
+
+	if filters.DocType != nil {
+		baseQuery += fmt.Sprintf(" AND d.doc_type = $%d", argIdx)
+		args = append(args, *filters.DocType)
+		argIdx++
+	}
+
+	if filters.OwnerID != nil {
+		baseQuery += fmt.Sprintf(" AND d.owner_user_id = $%d", argIdx)
+		args = append(args, *filters.OwnerID)
+		argIdx++
+	}
+
+	baseQuery += fmt.Sprintf(" ORDER BY rank DESC, d.updated_at DESC LIMIT $%d", argIdx)
+	args = append(args, limit)
+
+	rows, err := r.db.Query(ctx, baseQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("search documents: %w", err)
+	}
+	defer rows.Close()
+
+	var results []SearchResult
+	for rows.Next() {
+		var sr SearchResult
+		var clientID, clientName, clientCode *string
+		var ownerID, ownerName, ownerEmail *string
+
+		err := rows.Scan(
+			&sr.ID, &sr.TenantID, &sr.ClientID, &sr.Path, &sr.Title, &sr.DocType, &sr.Sensitivity,
+			&sr.OwnerUserID, &sr.MetadataJSON, &sr.CurrentRevisionID, &sr.CreatedBy, &sr.CreatedAt, &sr.UpdatedAt,
+			&clientID, &clientName, &clientCode,
+			&ownerID, &ownerName, &ownerEmail,
+			&sr.Rank, &sr.Headline,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan search result: %w", err)
+		}
+
+		if clientID != nil {
+			cid, _ := uuid.Parse(*clientID)
+			sr.Client = &ClientInfo{ID: cid, Name: *clientName, Code: *clientCode}
+		}
+		if ownerID != nil {
+			oid, _ := uuid.Parse(*ownerID)
+			sr.Owner = &UserInfo{ID: oid, Name: *ownerName, Email: *ownerEmail}
+		}
+
+		results = append(results, sr)
+	}
+
+	return results, nil
+}

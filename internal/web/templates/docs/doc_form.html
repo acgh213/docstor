@@ -38,8 +38,8 @@
                             <div class="form-group">
                                 <label for="doc_type">Type</label>
                                 <select id="doc_type" name="doc_type" class="form-control">
-                                    <option value="doc">Document</option>
-                                    <option value="runbook">Runbook</option>
+                                    <option value="doc" {{if eq .DefaultDocType "doc"}}selected{{end}}>Document</option>
+                                    <option value="runbook" {{if eq .DefaultDocType "runbook"}}selected{{end}}>Runbook</option>
                                 </select>
                             </div>
 

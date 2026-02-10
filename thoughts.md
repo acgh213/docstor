@@ -129,8 +129,45 @@ This meets the spirit of plan.md's Phase 5 acceptance criteria:
 ## Handoff Status
 
 - [x] `handoff.md` reviewed and confirmed up-to-date
-- [x] Phase 4 complete, all features documented
-- [x] Next steps (Phase 5-7) clearly outlined
+- [x] Phase 5 complete (enhanced textarea, CodeMirror deferred)
+- [x] Starting Phase 6 (Search) and Phase 7 (Living Runbooks)
 - [x] Technical decisions documented
 - [x] Database schema documented
 - [x] Route structure documented
+
+---
+
+## Phase 6 Implementation Notes (Search)
+
+### Approach
+- Add tsvector column to documents table for full-text search
+- Index title, path, and current revision body
+- Create search endpoint with filters (client, doc_type)
+- Search results page with highlighting
+
+### Migration Plan
+1. Add `search_vector` tsvector column to documents
+2. Create GIN index on search_vector
+3. Add trigger to update search_vector on document/revision changes
+4. Implement search repository method
+5. Add search handler and template
+
+---
+
+## Phase 7 Implementation Notes (Living Runbooks)
+
+### Approach
+- runbook_status table already exists in schema
+- Need to implement:
+  - Runbook verification workflow (POST /docs/id/{id}/verify)
+  - Runbook dashboard (/runbooks) showing overdue, unowned
+  - UI for setting verification interval
+  - Display verification status on doc read page for runbooks
+
+### Key Features
+1. Verify action stamps last_verified_at and computes next_due_at
+2. Dashboard shows:
+   - Overdue runbooks (next_due_at < NOW())
+   - Unowned runbooks (owner_user_id IS NULL)
+   - Recently verified
+3. Verification interval setting in edit/metadata
