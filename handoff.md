@@ -15,7 +15,7 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 - **CSS**: Custom minimal CSS (no Tailwind)
 - **Markdown**: goldmark + bluemonday sanitizer
 
-## Current Status: MVP Complete (Phase 7.5)
+## Current Status: Phase 8 Complete
 
 ### Completed Phases
 
@@ -30,6 +30,7 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 | 6 | Full-text search (PostgreSQL tsvector) | ✅ |
 | 7 | Living Runbooks (verification workflow, dashboard) | ✅ |
 | 7.5 | CodeMirror 6 editor with vim mode | ✅ |
+| 8 | Attachments + Evidence Bundles | ✅ |
 
 ## Project Structure
 
@@ -37,6 +38,7 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 switch-dune/
 ├── cmd/docstor/main.go          # Entry point
 ├── internal/
+│   ├── attachments/             # File attachments & evidence bundles
 │   ├── audit/                   # Audit logging
 │   ├── auth/                    # Sessions, middleware, password hashing
 │   ├── clients/                 # Clients repository
@@ -86,6 +88,13 @@ audit_log(id, tenant_id, actor_user_id, action, target_type, target_id,
 
 -- Sessions
 sessions(id, user_id, tenant_id, token_hash, created_at, expires_at, ip, user_agent)
+
+-- Attachments (Phase 8)
+attachments(id, tenant_id, filename, content_type, size_bytes, sha256, storage_key, created_by, created_at)
+attachment_links(id, tenant_id, attachment_id, linked_type, linked_id, created_at)
+  -- linked_type: 'document' | 'revision' | 'incident' | 'change'
+evidence_bundles(id, tenant_id, name, description, created_by, created_at)
+evidence_bundle_items(id, tenant_id, bundle_id, attachment_id, note, created_at)
 ```
 
 ## Key Routes
@@ -116,6 +125,22 @@ GET /runbooks                        # Dashboard (overdue, unowned, recent)
 
 # Clients
 GET/POST /clients, GET/POST /clients/{id}
+
+# Attachments (Phase 8)
+POST /attachments/upload             # Upload file
+GET  /attachments/{id}               # Download file
+GET  /docs/id/{id}/attachments       # Document attachments page
+POST /docs/id/{id}/attachments/{attID}/unlink  # Unlink from document
+
+# Evidence Bundles (Phase 8)
+GET  /evidence-bundles               # List bundles
+GET  /evidence-bundles/new           # New bundle form
+POST /evidence-bundles               # Create bundle
+GET  /evidence-bundles/{id}          # View bundle
+POST /evidence-bundles/{id}/items    # Add item to bundle
+POST /evidence-bundles/{id}/items/{attID}/remove  # Remove item
+GET  /evidence-bundles/{id}/export   # Export as ZIP
+POST /evidence-bundles/{id}/delete   # Delete bundle
 
 # HTMX
 POST /preview                        # Markdown preview
