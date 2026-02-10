@@ -1,9 +1,8 @@
 /**
- * Docstor Editor - Enhanced textarea with draft saving
- * CodeMirror 6 is complex to load from CDN due to module dependencies.
- * This provides a good editing experience with textarea + draft saving.
+ * Docstor Editor - CodeMirror 6 with vim mode and draft saving
  * 
- * TODO: For CodeMirror 6, build a proper bundle with esbuild/rollup
+ * Uses a bundled CodeMirror 6 (codemirror-bundle.js) for the editor,
+ * with localStorage draft saving for crash recovery.
  */
 
 // Draft storage
@@ -79,14 +78,101 @@ function showDraftPrompt(draft, currentContent, onRecover, onDiscard) {
     document.getElementById('discard-draft').onclick = () => { onDiscard(); banner.remove(); };
 }
 
-function initEditor() {
+// Vim mode state
+let vimEnabled = localStorage.getItem('docstor_vim_mode') === 'true';
+
+function createVimToggle(editor) {
+    const container = document.createElement('div');
+    container.className = 'editor-toolbar';
+    container.innerHTML = `
+        <label class="vim-toggle">
+            <input type="checkbox" id="vim-mode-toggle" ${vimEnabled ? 'checked' : ''}>
+            <span>Vim mode</span>
+        </label>
+        <span class="vim-indicator" id="vim-indicator" style="display: ${vimEnabled ? 'inline' : 'none'}">
+            Press <kbd>Esc</kbd> then <kbd>:</kbd> for commands, <kbd>i</kbd> to insert
+        </span>
+    `;
+    return container;
+}
+
+function initCodeMirrorEditor() {
+    const textarea = document.getElementById('body');
+    if (!textarea || typeof DocstorEditor === 'undefined') {
+        // Fallback to enhanced textarea
+        initEnhancedTextarea();
+        return;
+    }
+    
+    const currentContent = textarea.value;
+    const draft = loadDraft();
+    
+    // Hide original textarea
+    textarea.style.display = 'none';
+    
+    // Create editor container
+    const editorContainer = document.createElement('div');
+    editorContainer.id = 'cm-editor-container';
+    editorContainer.style.border = '1px solid #d0d7de';
+    editorContainer.style.borderRadius = '6px';
+    editorContainer.style.overflow = 'hidden';
+    editorContainer.style.minHeight = '400px';
+    textarea.parentNode.insertBefore(editorContainer, textarea);
+    
+    // Create CodeMirror editor
+    const editor = DocstorEditor.createEditor(editorContainer, {
+        content: currentContent,
+        vim: vimEnabled,
+        dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+        onUpdate: (content) => {
+            textarea.value = content;
+            saveDraft(content);
+        }
+    });
+    
+    // Add toolbar above editor
+    const toolbar = createVimToggle(editor);
+    editorContainer.parentNode.insertBefore(toolbar, editorContainer);
+    
+    // Vim toggle handler
+    document.getElementById('vim-mode-toggle').addEventListener('change', (e) => {
+        vimEnabled = e.target.checked;
+        localStorage.setItem('docstor_vim_mode', vimEnabled);
+        editor.toggleVim(vimEnabled);
+        document.getElementById('vim-indicator').style.display = vimEnabled ? 'inline' : 'none';
+    });
+    
+    // Draft recovery
+    if (draft) {
+        showDraftPrompt(draft, currentContent,
+            content => {
+                editor.setContent(content);
+                textarea.value = content;
+            },
+            clearDraft
+        );
+    }
+    
+    // Clear draft and sync content on form submit
+    textarea.closest('form')?.addEventListener('submit', () => {
+        textarea.value = editor.getContent();
+        clearDraft();
+    });
+    
+    // Focus editor
+    editor.focus();
+    
+    console.log('CodeMirror 6 editor initialized' + (vimEnabled ? ' (vim mode)' : ''));
+}
+
+function initEnhancedTextarea() {
     const textarea = document.getElementById('body');
     if (!textarea) return;
     
     const currentContent = textarea.value;
     const draft = loadDraft();
     
-    // Enhanced textarea
+    // Enhanced textarea styling
     textarea.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
     textarea.style.fontSize = '14px';
     textarea.style.lineHeight = '1.5';
@@ -119,6 +205,15 @@ function initEditor() {
     textarea.closest('form')?.addEventListener('submit', clearDraft);
     
     console.log('Editor initialized (enhanced textarea with draft saving)');
+}
+
+function initEditor() {
+    // Try CodeMirror first, fall back to enhanced textarea
+    if (typeof DocstorEditor !== 'undefined') {
+        initCodeMirrorEditor();
+    } else {
+        initEnhancedTextarea();
+    }
 }
 
 // Init when ready
