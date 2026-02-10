@@ -752,7 +752,7 @@ Identified from full-app UX test on Feb 10, 2026.
 - Replace with searchable attachment picker
 - Show attachment filename, date, and size in picker
 
-### Phase B — High Priority UX (2-3 hours)
+### Phase B — High Priority UX (2-3 hours) ✅ COMPLETE
 
 **B-1: Sidebar active state**
 - No visual indicator of current section
@@ -771,7 +771,7 @@ Identified from full-app UX test on Feb 10, 2026.
 - Topbar search and search page are disconnected
 - Topbar search should redirect to /search?q=...
 
-### Phase C — Visual Polish (2-3 hours)
+### Phase C — Visual Polish (2-3 hours) ✅ COMPLETE
 
 **C-1: Consistent breadcrumbs on all pages**
 - Some pages have breadcrumbs, some don't
