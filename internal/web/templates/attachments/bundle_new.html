@@ -1,0 +1,43 @@
+{{define "bundle_new.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | Docstor</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                <header class="page-header">
+                    <h1>New Evidence Bundle</h1>
+                </header>
+
+                <div class="card">
+                    <form action="/evidence-bundles" method="POST">
+                        <div class="form-group">
+                            <label for="name">Bundle Name *</label>
+                            <input type="text" id="name" name="name" required autofocus
+                                   placeholder="e.g., Acme Corp - Q1 2024 Audit">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="3"
+                                      placeholder="Purpose of this bundle, audit reference, etc."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <a href="/evidence-bundles" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Bundle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

@@ -2,6 +2,7 @@ package web
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/exedev/docstor/internal/attachments"
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
@@ -26,15 +28,17 @@ var templatesFS embed.FS
 var staticFS embed.FS
 
 type Server struct {
-	db        *pgxpool.Pool
-	cfg       *config.Config
-	templates *template.Template
-	sessions  *auth.SessionManager
-	authMw    *auth.Middleware
-	audit     *audit.Logger
-	clients   *clients.Repository
-	docs      *docs.Repository
-	runbooks  *runbooks.Repository
+	db          *pgxpool.Pool
+	cfg         *config.Config
+	templates   *template.Template
+	sessions    *auth.SessionManager
+	authMw      *auth.Middleware
+	audit       *audit.Logger
+	clients     *clients.Repository
+	docs        *docs.Repository
+	runbooks    *runbooks.Repository
+	attachments *attachments.Repo
+	storage     attachments.Storage
 }
 
 func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
@@ -45,15 +49,29 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	docsRepo := docs.NewRepository(db)
 	runbooksRepo := runbooks.NewRepository(db)
 
+	// Initialize attachments storage
+	storagePath := cfg.AttachmentStoragePath
+	if storagePath == "" {
+		storagePath = "/tmp/docstor-attachments"
+	}
+	localStorage, err := attachments.NewLocalStorage(storagePath)
+	if err != nil {
+		slog.Error("failed to initialize attachment storage", "error", err)
+		panic(err)
+	}
+	attachmentsRepo := attachments.NewRepo(db)
+
 	s := &Server{
-		db:       db,
-		cfg:      cfg,
-		sessions: sessions,
-		authMw:   authMw,
-		audit:    auditLog,
-		clients:  clientsRepo,
-		docs:     docsRepo,
-		runbooks: runbooksRepo,
+		db:          db,
+		cfg:         cfg,
+		sessions:    sessions,
+		authMw:      authMw,
+		audit:       auditLog,
+		clients:     clientsRepo,
+		docs:        docsRepo,
+		runbooks:    runbooksRepo,
+		attachments: attachmentsRepo,
+		storage:     localStorage,
 	}
 
 	if err := s.loadTemplates(); err != nil {
@@ -108,6 +126,26 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		// Document read by path (must be last)
 		r.Get("/docs/*", s.handleDocRead)
 
+		// Document attachments
+		r.Get("/docs/id/{id}/attachments", s.handleDocAttachments)
+		r.Post("/docs/id/{id}/attachments/{attID}/unlink", s.handleUnlinkAttachment)
+
+		// Attachments
+		r.Post("/attachments/upload", s.handleAttachmentUpload)
+		r.Get("/attachments/{id}", s.handleAttachmentDownload)
+
+		// Evidence Bundles
+		r.Route("/evidence-bundles", func(r chi.Router) {
+			r.Get("/", s.handleBundlesList)
+			r.Get("/new", s.handleBundleNew)
+			r.Post("/", s.handleBundleCreate)
+			r.Get("/{id}", s.handleBundleView)
+			r.Post("/{id}/items", s.handleBundleAddItem)
+			r.Post("/{id}/items/{attID}/remove", s.handleBundleRemoveItem)
+			r.Get("/{id}/export", s.handleBundleExport)
+			r.Post("/{id}/delete", s.handleBundleDelete)
+		})
+
 		// Clients
 		r.Route("/clients", func(r chi.Router) {
 			r.Get("/", s.handleClientsList)
@@ -127,6 +165,18 @@ func (s *Server) loadTemplates() error {
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"formatSize": func(bytes int64) string {
+			const unit = 1024
+			if bytes < unit {
+				return fmt.Sprintf("%d B", bytes)
+			}
+			div, exp := int64(unit), 0
+			for n := bytes / unit; n >= unit; n /= unit {
+				div *= unit
+				exp++
+			}
+			return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+		},
 	}
 
 	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS,
@@ -136,6 +186,7 @@ func (s *Server) loadTemplates() error {
 		"templates/clients/*.html",
 		"templates/search/*.html",
 		"templates/runbooks/*.html",
+		"templates/attachments/*.html",
 	)
 	if err != nil {
 		return err

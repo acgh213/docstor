@@ -1,0 +1,112 @@
+{{define "bundle_view.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | Docstor</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="/static/js/htmx.min.js"></script>
+</head>
+<body>
+    {{$bundle := .Content.Bundle}}
+    {{$items := .Content.Items}}
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                <nav class="breadcrumb">
+                    <a href="/evidence-bundles">Evidence Bundles</a> /
+                    {{$bundle.Name}}
+                </nav>
+
+                <header class="page-header">
+                    <div>
+                        <h1>{{$bundle.Name}}</h1>
+                        {{if $bundle.Description}}
+                        <p class="subtitle">{{$bundle.Description}}</p>
+                        {{end}}
+                    </div>
+                    <div class="header-actions">
+                        <a href="/evidence-bundles/{{$bundle.ID}}/export" class="btn btn-primary">Export ZIP</a>
+                        {{if .Membership.IsEditor}}
+                        <form action="/evidence-bundles/{{$bundle.ID}}/delete" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this bundle? Files will not be deleted.')">Delete Bundle</button>
+                        </form>
+                        {{end}}
+                    </div>
+                </header>
+
+                <div class="card">
+                    <h2>Files in Bundle ({{len $items}})</h2>
+                    {{if $items}}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Note</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $items}}
+                            <tr id="item-{{.ID}}">
+                                <td><a href="/attachments/{{.AttachmentID}}">{{.Attachment.Filename}}</a></td>
+                                <td>{{.Attachment.ContentType}}</td>
+                                <td>{{formatSize .Attachment.SizeBytes}}</td>
+                                <td>{{if .Note}}{{.Note}}{{else}}<em class="text-muted">-</em>{{end}}</td>
+                                <td>
+                                    <a href="/attachments/{{.AttachmentID}}" class="btn btn-sm btn-secondary">Download</a>
+                                    {{if $.Membership.IsEditor}}
+                                    <form action="/evidence-bundles/{{$bundle.ID}}/items/{{.AttachmentID}}/remove" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove from bundle?')">Remove</button>
+                                    </form>
+                                    {{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    {{else}}
+                    <p class="empty-state">No files in this bundle yet.</p>
+                    {{end}}
+                </div>
+
+                {{if .Membership.IsEditor}}
+                <div class="card">
+                    <h2>Add File to Bundle</h2>
+                    <form action="/evidence-bundles/{{$bundle.ID}}/items" method="POST" class="form-inline">
+                        <div class="form-group">
+                            <label for="attachment_id">Attachment ID</label>
+                            <input type="text" id="attachment_id" name="attachment_id" required
+                                   placeholder="UUID of attachment">
+                        </div>
+                        <div class="form-group">
+                            <label for="note">Note (optional)</label>
+                            <input type="text" id="note" name="note"
+                                   placeholder="e.g., Firewall config backup">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add to Bundle</button>
+                    </form>
+                    <p class="help-text">Copy the attachment ID from the document's attachment page.</p>
+                </div>
+                {{end}}
+
+                <div class="card bundle-info">
+                    <h3>Bundle Info</h3>
+                    <dl>
+                        <dt>Created</dt>
+                        <dd>{{$bundle.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
+                        <dt>Total Files</dt>
+                        <dd>{{len $items}}</dd>
+                    </dl>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

@@ -8,22 +8,24 @@ import (
 )
 
 type Config struct {
-	Env          string
-	Port         string
-	DatabaseURL  string
-	SessionKey   string
-	CSRFKey      string
+	Env                   string
+	Port                  string
+	DatabaseURL           string
+	SessionKey            string
+	CSRFKey               string
+	AttachmentStoragePath string
 }
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		Env:         getEnv("APP_ENV", "development"),
-		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", ""),
-		SessionKey:  getEnv("SESSION_KEY", ""),
-		CSRFKey:     getEnv("CSRF_KEY", ""),
+		Env:                   getEnv("APP_ENV", "development"),
+		Port:                  getEnv("PORT", "8080"),
+		DatabaseURL:           getEnv("DATABASE_URL", ""),
+		SessionKey:            getEnv("SESSION_KEY", ""),
+		CSRFKey:               getEnv("CSRF_KEY", ""),
+		AttachmentStoragePath: getEnv("ATTACHMENT_STORAGE_PATH", "/tmp/docstor-attachments"),
 	}
 
 	if cfg.DatabaseURL == "" {

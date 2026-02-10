@@ -1,0 +1,56 @@
+{{define "bundles_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | Docstor</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    {{$bundles := .Content.Bundles}}
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                <header class="page-header">
+                    <h1>Evidence Bundles</h1>
+                    {{if .Membership.IsEditor}}
+                    <a href="/evidence-bundles/new" class="btn btn-primary">New Bundle</a>
+                    {{end}}
+                </header>
+
+                {{if $bundles}}
+                <div class="card-grid">
+                    {{range $bundles}}
+                    <div class="card">
+                        <h3><a href="/evidence-bundles/{{.ID}}">{{.Name}}</a></h3>
+                        {{if .Description}}
+                        <p class="description">{{.Description}}</p>
+                        {{end}}
+                        <div class="card-meta">
+                            <span>{{.ItemCount}} files</span>
+                            <span>Created {{.CreatedAt.Format "Jan 2, 2006"}}</span>
+                        </div>
+                        <div class="card-actions">
+                            <a href="/evidence-bundles/{{.ID}}" class="btn btn-sm btn-secondary">View</a>
+                            <a href="/evidence-bundles/{{.ID}}/export" class="btn btn-sm btn-primary">Export ZIP</a>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{else}}
+                <div class="empty-state">
+                    <p>No evidence bundles yet.</p>
+                    {{if .Membership.IsEditor}}
+                    <p>Create a bundle to collect attachments for export.</p>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}
