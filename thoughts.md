@@ -1,186 +1,157 @@
 # Docstor Implementation Progress
 
-## Current Status: Phase 7 Complete (MVP)
+## Current Status: Phase 8 + Security + UX Overhaul Complete
+
+Last updated: February 10, 2026
+
+---
 
 ## Completed Phases
 
-### Phase 0 ✅
+### Phase 0 ✅ — Project Skeleton
 - Go module, Makefile, Docker Compose
 - Migrations framework with embedded SQL
 - Base layout, CSS, health endpoint
 
-### Phase 1 ✅
-- Auth: password hashing, sessions, login/logout
-- Tenant-scoped middleware
-- Role gating (admin/editor/reader)
+### Phase 1 ✅ — Auth & Tenancy
+- Password hashing (bcrypt), sessions (token + hash in Postgres)
+- Tenant-scoped middleware (every request filtered by tenant_id)
+- Role gating: admin/editor/reader
 - Audit logging foundation
 
-### Phase 2 ✅
+### Phase 2 ✅ — Clients
 - Clients CRUD with full UI
 - Audit logging for client operations
 - Permission gating on create/edit
 
-### Phase 3 ✅
+### Phase 3 ✅ — Documents & Revisions
 - Documents repository: List, GetByPath, GetByID, Create, Update
 - Revisions table with conflict detection via base_revision_id
 - Markdown rendering with goldmark + bluemonday
 - Templates: list, read, form, edit, history, conflict
 - Route structure: `/docs/*` for read, `/docs/id/{id}/...` for operations
 
-### Phase 4 ✅
-- **Revert functionality**: Creates new revision from old revision's content
-- **Diff view**: Line-by-line diff between any two revisions
-- **Revision view**: View any historical revision with rendered markdown
-- **History UI enhanced**: Compare revisions dropdown, View/Revert buttons
-- **Audit logging**: Revert actions logged with metadata
-- Uses go-diff/diffmatchpatch for line-based diff computation
+### Phase 4 ✅ — History, Diff, Revert
+- Revert creates new revision from old revision's content (never deletes)
+- Line-by-line diff between any two revisions (go-diff/diffmatchpatch)
+- View any historical revision with rendered markdown
+- History UI: compare revisions dropdown, View/Revert buttons
 
-## Remaining Work
-
-### Phase 5 - Editor Island ✅
-**Status**: Complete
-
-**Implemented:**
-- Enhanced textarea with monospace font (fallback)
+### Phase 5 ✅ — Editor Island
+- Enhanced textarea with monospace font (JS-disabled fallback)
 - localStorage draft saving with recovery
 - Tab key indentation support
-- HTMX preview from Phase 3
+- HTMX markdown preview
 
-### Phase 7.5 - CodeMirror 6 Editor ✅
-**Status**: Complete
+### Phase 6 ✅ — Search
+- tsvector column with GIN index
+- Trigger auto-updates search vector on document changes
+- Weighted search (title A, path B, body C)
+- Filters: client_id, doc_type, owner_id
+- ts_headline for highlighted snippets
 
-**Implemented:**
+### Phase 7 ✅ — Living Runbooks
+- runbook_status table: verification cadence, last_verified_at, next_due_at
+- Verify action stamps timestamp, computes next due date
+- Runbooks dashboard: Overdue / Unowned / Recently Verified
+- Runbook Status card on doc view page
+
+### Phase 7.5 ✅ — CodeMirror 6 Editor
 - esbuild bundle for CM6 (editor-bundle/)
-- codemirror-bundle.js (686KB) with all dependencies
-- Markdown syntax highlighting
+- Markdown syntax highlighting with custom theme
 - Vim mode toggle (persisted in localStorage)
 - Line numbers, code folding, bracket matching
 - Search (Ctrl+F), history (undo/redo)
-- Light/dark theme support
-- Falls back to enhanced textarea if bundle fails
+- Falls back to textarea if bundle fails
 
-### Phase 6 - Search ✅
-**Status**: Complete
+### Phase 8 ✅ — Attachments + Evidence Bundles
+- `attachments` table with SHA256 deduplication
+- `attachment_links` for polymorphic linking (doc, revision, incident)
+- `evidence_bundles` + `evidence_bundle_items` tables
+- Upload, download, link-to-doc, unlink handlers
+- Bundle CRUD + ZIP export
+- Attachment picker (AJAX select dropdown)
+- Local file storage backend (S3 interface planned)
+- Audit logging for all attachment operations
 
-**Implemented:**
-- Migration adds tsvector column with GIN index to documents
-- Trigger auto-updates search vector on document changes
-- Weighted search (title A, path B, body C)
-- Search repository with filters (client_id, doc_type, owner_id)
-- ts_headline for highlighted snippets
-- Search UI with filters dropdown
-- Results show highlights, metadata, badges
+### Security Hardening ✅
+- **CSRF protection**: nosurf middleware with form tokens + HTMX header injection
+- **Login rate limiting**: 5 attempts/60s per IP, in-memory with auto-cleanup
+- **Sensitivity gating**: public-internal for all; restricted/confidential for admin+editor only
+- Proper TLS detection for exe.dev proxy (X-Forwarded-Proto)
 
-### Phase 7 - Living Runbooks ✅
-**Status**: Complete
+### UX/UI Overhaul ✅
+- **Phase A (Critical)**: Attachments button on doc view, mobile responsive layout with hamburger sidebar, form submission fix, bundle attachment picker
+- **Phase B (High)**: Sidebar active state (URL-based), cookie-based flash messages (auto-dismiss + dismiss button), unified search UX
+- **Phase C (Polish)**: Breadcrumbs on all pages, table zebra striping + hover, empty state icons + CTAs, loading states on submit, confirm dialogs, favicon, relative time display
+- **Phase D (Editor)**: Custom markdown-aware HighlightStyle (headings blue, bold orange, italic purple, code red, links blue), improved rendered code blocks (dark theme, copy button), blockquote/table/hr styling, Ctrl+K search + Ctrl+S save shortcuts, CodeMirror on new doc form
 
-**Implemented:**
-- runbooks package with Repository for runbook_status operations
-- EnsureStatus creates runbook_status on first verify
-- Verify action stamps last_verified_at, computes next_due_at
-- UpdateInterval for changing verification cadence
-- ListOverdue/ListUnowned/ListRecentlyVerified queries
-- Runbooks dashboard (/runbooks) with three sections:
-  - Overdue (next_due_at < NOW())
-  - Unowned (owner_user_id IS NULL)
-  - Recently Verified
-- Runbook Status card on doc_read page for runbooks
-- Mark as Verified button
-- Audit logging for verification actions
+---
 
-## Key Files Added/Modified This Session
+## Remaining Work
 
+### Testing (required by claude.md §13)
+- [ ] Tenant isolation cannot leak data across tenants
+- [ ] Role gating: Reader cannot edit; Editor can; Admin can manage roles
+- [ ] Revision conflict detection works
+- [ ] Revert creates new revision
+- [ ] Markdown rendering is sanitized (XSS regression tests)
+- [ ] Audit log is written for required actions
+
+### Feature Phases (Post-MVP)
+
+#### Phase 9 — Templates + Checklists
+- Template library (reusable doc templates)
+- Checklist items with trackable instances linked to docs/incidents
+
+#### Phase 10 — CMDB-lite + Live Blocks
+- systems/vendors/contacts/circuits tables
+- `{{system:123}}` shortcodes in markdown
+
+#### Phase 11 — Known Issues + Incidents
+- Known issues board
+- Incident timeline with events
+
+#### Phase 12 — Doc Health Dashboards
+- Stale docs detection (updated_at > 90 days)
+- Unowned docs report
+- Broken links detection (parse markdown links)
+
+### Minor Gaps
+- [ ] Doc rename/move/delete handlers (audit constants exist but no UI)
+- [ ] HTMX folder tree navigation (claude.md §6: `GET /tree?folder=...`)
+- [ ] Drag-and-drop file upload
+- [ ] Image/PDF preview before download
+
+---
+
+## Architecture Notes
+
+### Key Decisions
+1. **No React/SPA** — Server-rendered HTML + HTMX for partials (per claude.md §1)
+2. **CodeMirror 6** — Only JS "island" allowed; bundled with esbuild
+3. **Postgres FTS** — tsvector + GIN index; no external search service
+4. **nosurf CSRF** — Cookie-based double-submit; compatible with HTMX via X-CSRF-Token header
+5. **Sensitivity gating** — Role-only in MVP (no per-doc allowlists)
+6. **Immutable revisions** — Revert creates new revision; never delete history
+
+### File Structure
 ```
+cmd/docstor/main.go              # Entry point
 internal/
-├── docs/
-│   ├── docs.go          # Added Revert() method
-│   └── diff.go          # NEW: Diff computation
-└── web/
-    ├── handlers_docs.go # Added handleDocRevert, handleDocDiff, handleDocRevision
-    ├── router.go        # Added routes for diff, revision, revert
-    └── templates/docs/
-        ├── doc_diff.html     # NEW: Diff view template
-        ├── doc_revision.html # NEW: Revision view template
-        └── doc_history.html  # Updated with compare UI, View/Revert buttons
+  attachments/                    # File storage + repo
+  audit/                          # Append-only audit log
+  auth/                           # Sessions, passwords, middleware, rate limiter
+  clients/                        # Clients CRUD
+  config/                         # Env-based config
+  db/migrations/                  # SQL migrations (001-003)
+  docs/                           # Documents, revisions, markdown, diff, sensitivity
+  runbooks/                       # Verification workflow
+  search/                         # FTS repository
+  web/                            # Handlers, templates, router, flash
+editor-bundle/                    # CM6 esbuild source
+web/templates/                    # Go html/template files
+web/static/                       # CSS, JS, favicon
 ```
 
-## Technical Notes
-
-1. Diff uses go-diff/diffmatchpatch for line-based comparison
-2. Revert creates a new revision (never deletes history)
-3. All revert operations are audited with metadata
-4. History page now has revision comparison feature
-
-## Handoff
-
-See `handoff.md` for complete implementation status and next steps.
-
-
-## Phase 5 Implementation Notes
-
-### What Was Implemented
-
-**Enhanced Textarea with Draft Saving** (`editor-cm.js`):
-- ✅ Monospace font for code/markdown editing
-- ✅ Tab key support (inserts 4 spaces)
-- ✅ localStorage draft saving (auto-saves on every keystroke)
-- ✅ Draft recovery prompt when returning to edit page
-- ✅ "Draft saved" indicator in UI
-- ✅ Draft cleared on successful save
-
-### CodeMirror 6 Challenges
-
-CodeMirror 6 could not be loaded from CDN due to ES module dependency conflicts:
-- CM6 is heavily modular with many interdependent packages
-- Each CDN import gets its own instance of `@codemirror/state`
-- `instanceof` checks fail when multiple instances are loaded
-- This is a known issue with CM6 + browser ESM imports
-
-**Future Options for Full CodeMirror 6:**
-1. Build a local bundle with esbuild/rollup that includes all dependencies
-2. Use CodeMirror 5 which has simpler UMD builds
-3. Self-host pre-built CM6 bundles
-
-### Current Status
-
-The enhanced textarea provides a good editing experience that:
-- Works without JS (basic textarea fallback)
-- Saves drafts to prevent lost work
-- Supports tab indentation
-- Uses monospace font appropriate for markdown
-
-This meets the spirit of plan.md's Phase 5 acceptance criteria:
-- "Editing feels good; page still works without JS"
-- HTMX preview was already implemented in Phase 3
-
----
-
-## Handoff Status
-
-- [x] `handoff.md` reviewed and confirmed up-to-date
-- [x] Phase 5 complete (enhanced textarea, CodeMirror deferred)
-- [x] Starting Phase 6 (Search) and Phase 7 (Living Runbooks)
-- [x] Technical decisions documented
-- [x] Database schema documented
-- [x] Route structure documented
-
----
-
-## MVP Complete!
-
-Phases 0-7 are complete. The MVP includes:
-- Tenant isolation + role gating
-- Client management
-- Documents with revisions, history, diff, revert
-- Server-side markdown rendering + sanitization
-- Full-text search with PostgreSQL tsvector
-- Living runbooks with verification workflow + overdue dashboard
-- Audit logging for all meaningful actions
-
-## Remaining Work (Post-MVP)
-
-### Phase 8 - Attachments + Evidence Bundles
-### Phase 9 - Templates + Checklists
-### Phase 10 - CMDB-lite + Live Blocks
-### Phase 11 - Known Issues + Incidents
-### Phase 12 - Doc Health Dashboards
+See `handoff.md` for complete reference.

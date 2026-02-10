@@ -809,3 +809,26 @@ Identified from full-app UX test on Feb 10, 2026.
 * Enforce tenant scoping in repository methods, not ad-hoc in handlers.
 * Every write path must add an audit entry (and tests should expect it where practical).
 * Do not expand JS beyond CodeMirror + tiny helpers; HTMX is for partial HTML, not app state.
+
+### Security Hardening ✅ COMPLETE
+
+**S-1: CSRF Protection (nosurf)**
+- justinas/nosurf v1.2 middleware on all POST routes
+- Form tokens via {{.CSRFField}} in every POST form
+- HTMX X-CSRF-Token header injection
+- Proper TLS detection via SetIsTLSFunc (X-Forwarded-Proto)
+- /preview endpoint exempted for HTMX markdown preview
+
+**S-2: Login Rate Limiting**
+- In-memory IP-based rate limiter (5 attempts/60s)
+- Port stripped from RemoteAddr for consistent tracking
+- X-Forwarded-For support
+- Retry-After header
+- Reset on successful login
+- Tests with race detection
+
+**S-3: Sensitivity Gating (claude.md §3)**
+- docs.CanAccess(sensitivity, role) helper
+- public-internal: all roles
+- restricted/confidential: admin + editor only
+- Applied to all doc handlers + list/search filtering

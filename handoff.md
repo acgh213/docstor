@@ -15,7 +15,7 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 - **CSS**: Custom minimal CSS (no Tailwind)
 - **Markdown**: goldmark + bluemonday sanitizer
 
-## Current Status: Phase 8 Complete
+## Current Status: Phase 8 + Security + UX Overhaul Complete
 
 ### Completed Phases
 
@@ -31,6 +31,11 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 | 7 | Living Runbooks (verification workflow, dashboard) | ✅ |
 | 7.5 | CodeMirror 6 editor with vim mode | ✅ |
 | 8 | Attachments + Evidence Bundles | ✅ |
+| Sec | CSRF, login rate limiting, sensitivity gating | ✅ |
+| UX A | Mobile layout, attachments button, form fixes | ✅ |
+| UX B | Flash messages, sidebar active state, search UX | ✅ |
+| UX C | Breadcrumbs, tables, empty states, loading states | ✅ |
+| UX D | Editor syntax highlighting, code blocks, shortcuts | ✅ |
 
 ## Project Structure
 
@@ -40,12 +45,12 @@ switch-dune/
 ├── internal/
 │   ├── attachments/             # File attachments & evidence bundles
 │   ├── audit/                   # Audit logging
-│   ├── auth/                    # Sessions, middleware, password hashing
+│   ├── auth/                    # Sessions, middleware, password hashing, rate limiter
 │   ├── clients/                 # Clients repository
 │   ├── config/                  # Config loading
 │   ├── db/                      # Database connection, migrations
 │   │   └── migrations/          # SQL migration files
-│   ├── docs/                    # Documents, revisions, markdown, diff
+│   ├── docs/                    # Documents, revisions, markdown, diff, sensitivity
 │   ├── runbooks/                # Runbook verification status
 │   └── web/                     # HTTP handlers, templates, static
 │       ├── handlers*.go         # Route handlers
@@ -145,6 +150,42 @@ POST /evidence-bundles/{id}/delete   # Delete bundle
 # HTMX
 POST /preview                        # Markdown preview
 ```
+
+## Security
+
+### CSRF Protection
+- **Library**: `justinas/nosurf` v1.2 (double-submit cookie pattern)
+- **Form tokens**: `{{.CSRFField}}` in every POST form template
+- **HTMX**: `X-CSRF-Token` header injected via `htmx:configRequest` event listener
+- **TLS detection**: `SetIsTLSFunc` checks `X-Forwarded-Proto` header for exe.dev proxy
+- **Exemptions**: `/preview` endpoint (HTMX markdown preview) exempted from CSRF check
+- **Cookie**: `csrf_token`, HttpOnly, SameSite=Lax, Secure in production
+
+### Login Rate Limiting
+- **Limiter**: In-memory, IP-based (`internal/auth/ratelimit.go`)
+- **Policy**: 5 attempts per 60-second window
+- **IP extraction**: Strips port from RemoteAddr; uses X-Forwarded-For when present
+- **Reset**: Counter cleared on successful login
+- **Cleanup**: Stale entries purged automatically after 5 minutes
+- **Headers**: `Retry-After` header sent when rate limited
+
+### Sensitivity Gating (claude.md §3)
+- **Helper**: `docs.CanAccess(sensitivity, role)` in `internal/docs/sensitivity.go`
+- **Policy**:
+  - `public-internal`: all roles (admin, editor, reader)
+  - `restricted` / `confidential`: admin + editor only
+- **Enforcement points**:
+  - Doc read, edit, save, history, diff, revision, revert handlers
+  - Docs list and search results filtered by role
+  - Returns 403 Forbidden for unauthorized access
+
+### Other Security Measures
+- Session cookies: HttpOnly, SameSite=Lax, Secure in production
+- Markdown sanitization: bluemonday with `RequireNoReferrerOnLinks`, `AddTargetBlankToFullyQualifiedLinks`
+- Password hashing: bcrypt
+- All queries tenant-scoped
+
+---
 
 ## Running Locally
 
