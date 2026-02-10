@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="/static/css/main.css">
     <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
@@ -14,20 +15,31 @@
         <main class="main-content">
             {{template "topbar" .}}
             <div class="content">
-                {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
-                {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
+                {{template "alerts" .}}
 
                 <div class="page-header">
-                    <h2>Welcome to Docstor</h2>
+                    <h2>Dashboard</h2>
                 </div>
                 <div class="dashboard">
                     <section class="card">
-                        <h3>Recent Documents</h3>
-                        <p class="text-muted">No documents yet. Create your first document to get started.</p>
+                        <h3>📄 Quick Links</h3>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                            <a href="/docs" class="btn btn-secondary">All Documents</a>
+                            <a href="/runbooks" class="btn btn-secondary">Runbooks</a>
+                            <a href="/clients" class="btn btn-secondary">Clients</a>
+                            <a href="/evidence-bundles" class="btn btn-secondary">Evidence Bundles</a>
+                            {{if .Membership.IsEditor}}
+                            <a href="/docs/new" class="btn btn-primary">New Document</a>
+                            {{end}}
+                        </div>
                     </section>
                     <section class="card">
-                        <h3>Runbooks Needing Attention</h3>
-                        <p class="text-muted">No runbooks requiring verification.</p>
+                        <h3>⚠️ Runbooks</h3>
+                        <p class="text-muted">Check the <a href="/runbooks">Runbooks Dashboard</a> for overdue and unverified runbooks.</p>
+                    </section>
+                    <section class="card">
+                        <h3>🔍 Search</h3>
+                        <p class="text-muted">Use <kbd>Ctrl+K</kbd> to search docs from anywhere.</p>
                     </section>
                 </div>
 

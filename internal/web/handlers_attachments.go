@@ -139,6 +139,7 @@ func (s *Server) handleAttachmentUpload(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Regular form submission - redirect back
+	setFlashSuccess(w, "File uploaded successfully")
 	if documentID != "" {
 		http.Redirect(w, r, "/docs/id/"+documentID+"/attachments", http.StatusSeeOther)
 	} else {
@@ -284,6 +285,7 @@ func (s *Server) handleUnlinkAttachment(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	setFlashSuccess(w, "Attachment removed")
 	http.Redirect(w, r, "/docs/id/"+docID+"/attachments", http.StatusSeeOther)
 }
 
@@ -369,6 +371,7 @@ func (s *Server) handleBundleCreate(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"name": name},
 	})
 
+	setFlashSuccess(w, "Evidence bundle created")
 	http.Redirect(w, r, "/evidence-bundles/"+bundle.ID.String(), http.StatusSeeOther)
 }
 
@@ -633,6 +636,7 @@ func (s *Server) handleBundleDelete(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"name": bundle.Name},
 	})
 
+	setFlashSuccess(w, "Evidence bundle deleted")
 	http.Redirect(w, r, "/evidence-bundles", http.StatusSeeOther)
 }
 

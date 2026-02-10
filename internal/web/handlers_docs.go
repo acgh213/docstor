@@ -251,6 +251,7 @@ func (s *Server) handleDocCreate(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"path": doc.Path, "title": doc.Title},
 	})
 
+	setFlashSuccess(w, "Document created successfully")
 	http.Redirect(w, r, "/docs/"+doc.Path, http.StatusSeeOther)
 }
 
@@ -386,6 +387,7 @@ func (s *Server) handleDocSaveByID(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"path": doc.Path, "revision_id": doc.CurrentRevisionID.String()},
 	})
 
+	setFlashSuccess(w, "Changes saved successfully")
 	http.Redirect(w, r, "/docs/"+doc.Path, http.StatusSeeOther)
 }
 
@@ -491,6 +493,7 @@ func (s *Server) handleDocRevertByID(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"path": doc.Path, "reverted_to": revID.String(), "new_revision_id": doc.CurrentRevisionID.String()},
 	})
 
+	setFlashSuccess(w, "Document reverted successfully")
 	http.Redirect(w, r, "/docs/"+doc.Path, http.StatusSeeOther)
 }
 

@@ -343,6 +343,15 @@ tr:hover td {
     padding: 12px 16px;
     border-radius: var(--radius);
     margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: alert-in 0.3s ease;
+}
+
+@keyframes alert-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .alert-error {
@@ -355,6 +364,22 @@ tr:hover td {
     background: rgba(16, 185, 129, 0.1);
     color: var(--color-success);
     border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.alert .alert-dismiss {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.5;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.alert .alert-dismiss:hover {
+    opacity: 1;
 }
 
 /* Empty states */
@@ -943,14 +968,6 @@ code {
 }
 
 /* Page header with actions */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-}
 
 .page-actions {
     display: flex;
@@ -1132,21 +1149,99 @@ tr:hover td {
 /* ==================== */
 /* Empty state enhanced  */
 /* ==================== */
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--color-text-muted);
+}
+
 .empty-state-icon {
     font-size: 48px;
     line-height: 1;
     margin-bottom: 16px;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
-.empty-state {
-    padding: 60px 20px;
+.empty-state h3 {
+    font-size: 18px;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    margin-bottom: 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .empty-state .btn {
-    margin-top: 16px;
+    margin-top: 20px;
     padding: 10px 24px;
     font-size: 15px;
+}
+
+/* ==================== */
+/* Confirm dialog        */
+/* ==================== */
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+    animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.confirm-dialog {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    padding: 24px;
+    max-width: 420px;
+    width: calc(100% - 32px);
+}
+
+.confirm-dialog h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+}
+
+.confirm-dialog p {
+    color: var(--color-text-muted);
+    margin: 0 0 20px 0;
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* Danger variant */
+.confirm-dialog.danger h3 {
+    color: var(--color-danger);
+}
+
+.btn-danger {
+    background: var(--color-danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
 }
 
 /* ==================== */
@@ -1155,14 +1250,21 @@ tr:hover td {
 .btn.loading {
     opacity: 0.7;
     pointer-events: none;
+    position: relative;
+}
+
+.btn.loading .btn-text {
+    visibility: hidden;
 }
 
 .btn.loading::after {
     content: '';
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    margin-left: 8px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
@@ -1171,6 +1273,26 @@ tr:hover td {
 
 @keyframes btn-spin {
     to { transform: rotate(360deg); }
+}
+
+/* ==================== */
+/* Relative time badge   */
+/* ==================== */
+.time-relative {
+    cursor: help;
+    border-bottom: 1px dotted var(--color-text-muted);
+}
+
+/* ==================== */
+/* Page transition       */
+/* ==================== */
+.content {
+    animation: content-in 0.15s ease;
+}
+
+@keyframes content-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 /* ==================== */

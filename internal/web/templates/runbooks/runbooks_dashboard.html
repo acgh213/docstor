@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
@@ -13,8 +14,11 @@
         <main class="main-content">
             {{template "topbar" .}}
             <div class="content">
-                {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
-                {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    Runbooks
+                </nav>
 
                 <div class="page-header">
                     <h2>Runbooks Dashboard</h2>
@@ -127,8 +131,12 @@
                 {{if not .Unowned}}
                 {{if not .RecentlyVerified}}
                 <div class="card">
-                    <p class="text-muted">No runbooks yet. Create your first runbook to start tracking verification.</p>
-                    <a href="/docs/new?type=runbook" class="btn btn-primary">Create Runbook</a>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <h3>All clear!</h3>
+                        <p>No runbooks need attention right now. Create a runbook to start tracking verification cadence.</p>
+                        <a href="/docs/new?type=runbook" class="btn btn-primary">Create Runbook</a>
+                    </div>
                 </div>
                 {{end}}
                 {{end}}

@@ -18,6 +18,15 @@
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 {{end}}
 
+{{define "head_common"}}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+{{end}}
+
+{{define "alerts"}}
+{{if .Error}}<div class="alert alert-error"><span>{{.Error}}</span><button class="alert-dismiss" aria-label="Dismiss">&times;</button></div>{{end}}
+{{if .Success}}<div class="alert alert-success"><span>{{.Success}}</span><button class="alert-dismiss" aria-label="Dismiss">&times;</button></div>{{end}}
+{{end}}
+
 {{define "topbar"}}
 <header class="topbar">
     <div class="topbar-left">
@@ -71,5 +80,128 @@ function toggleSidebar() {
     }
     if (best) best.classList.add('active');
 })();
+
+// Auto-dismiss flash alerts after 5 seconds
+(function() {
+    document.querySelectorAll('.alert-success').forEach(function(el) {
+        setTimeout(function() {
+            el.style.transition = 'opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s';
+            el.style.opacity = '0';
+            el.style.maxHeight = '0';
+            el.style.margin = '0';
+            el.style.padding = '0';
+            el.style.overflow = 'hidden';
+            setTimeout(function() { el.remove(); }, 350);
+        }, 5000);
+    });
+    // Dismiss buttons
+    document.querySelectorAll('.alert-dismiss').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var alert = btn.closest('.alert');
+            alert.style.transition = 'opacity 0.2s';
+            alert.style.opacity = '0';
+            setTimeout(function() { alert.remove(); }, 200);
+        });
+    });
+})();
+
+// Loading state on form submit
+(function() {
+    document.querySelectorAll('form').forEach(function(form) {
+        // Skip search forms and inline logout
+        if (form.classList.contains('search-form') || form.classList.contains('search-filters-form')) return;
+        if (form.action && form.action.indexOf('/logout') !== -1) return;
+        form.addEventListener('submit', function() {
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn && !btn.classList.contains('loading')) {
+                btn.classList.add('loading');
+                // Delay disable so browser submits the form first
+                setTimeout(function() {
+                    btn.disabled = true;
+                }, 50);
+                // Re-enable after 8s in case of error
+                setTimeout(function() {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }, 8000);
+            }
+        });
+    });
+})();
+
+// Confirm dialogs for destructive actions
+function confirmAction(title, message, form) {
+    var overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML =
+        '<div class="confirm-dialog danger">' +
+        '<h3>' + title + '</h3>' +
+        '<p>' + message + '</p>' +
+        '<div class="confirm-dialog-actions">' +
+        '<button class="btn btn-secondary" data-action="cancel">Cancel</button>' +
+        '<button class="btn btn-danger" data-action="confirm">Confirm</button>' +
+        '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-action="cancel"]').addEventListener('click', function() {
+        overlay.remove();
+    });
+    overlay.querySelector('[data-action="confirm"]').addEventListener('click', function() {
+        overlay.remove();
+        form.submit();
+    });
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+// Wire up data-confirm attributes
+document.querySelectorAll('[data-confirm]').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+        e.preventDefault();
+        var form = el.closest('form');
+        if (!form) return;
+        e.stopPropagation();
+        confirmAction(
+            el.getAttribute('data-confirm-title') || 'Are you sure?',
+            el.getAttribute('data-confirm'),
+            form
+        );
+    });
+});
+
+// Relative time formatting
+(function() {
+    document.querySelectorAll('time[datetime]').forEach(function(el) {
+        var dt = new Date(el.getAttribute('datetime'));
+        var now = new Date();
+        var diff = (now - dt) / 1000;
+        var text;
+        if (diff < 60) text = 'just now';
+        else if (diff < 3600) text = Math.floor(diff/60) + 'm ago';
+        else if (diff < 86400) text = Math.floor(diff/3600) + 'h ago';
+        else if (diff < 604800) text = Math.floor(diff/86400) + 'd ago';
+        else return; // older than a week, keep absolute
+        el.setAttribute('title', el.textContent);
+        el.textContent = text;
+        el.classList.add('time-relative');
+    });
+})();
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+K or Cmd+K: focus search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        var input = document.querySelector('.search-input');
+        if (input) input.focus();
+    }
+    // Esc: close sidebar on mobile, close confirm dialog
+    if (e.key === 'Escape') {
+        var overlay = document.querySelector('.confirm-overlay');
+        if (overlay) { overlay.remove(); return; }
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('open')) toggleSidebar();
+    }
+});
 </script>
 {{end}}

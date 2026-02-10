@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"time"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -177,6 +178,11 @@ func (s *Server) loadTemplates() error {
 				exp++
 			}
 			return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+		},
+		"timeTag": func(t time.Time, format string) template.HTML {
+			iso := t.Format(time.RFC3339)
+			display := t.Format(format)
+			return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, display))
 		},
 	}
 

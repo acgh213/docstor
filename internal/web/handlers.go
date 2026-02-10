@@ -36,6 +36,13 @@ func (s *Server) newPageData(r *http.Request) PageData {
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, data PageData) {
+	// Read flash messages
+	if flash := getFlash(w, r, flashSuccessCookie); flash != "" && data.Success == "" {
+		data.Success = flash
+	}
+	if flash := getFlash(w, r, flashErrorCookie); flash != "" && data.Error == "" {
+		data.Error = flash
+	}
 	if err := s.templates.ExecuteTemplate(w, name, data); err != nil {
 		slog.Error("template render error", "template", name, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -291,6 +298,7 @@ func (s *Server) handleClientCreate(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"name": name, "code": code},
 	})
 
+	setFlashSuccess(w, "Client created successfully")
 	http.Redirect(w, r, "/clients/"+client.ID.String(), http.StatusSeeOther)
 }
 
@@ -425,5 +433,6 @@ func (s *Server) handleClientUpdate(w http.ResponseWriter, r *http.Request) {
 		Metadata:    map[string]any{"name": name, "code": code},
 	})
 
+	setFlashSuccess(w, "Client updated successfully")
 	http.Redirect(w, r, "/clients/"+client.ID.String(), http.StatusSeeOther)
 }

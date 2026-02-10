@@ -121,6 +121,7 @@ func (s *Server) handleRunbookVerify(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Redirect back to the document
+	setFlashSuccess(w, "Runbook verified successfully")
 	http.Redirect(w, r, "/docs/"+doc.Path, http.StatusSeeOther)
 }
 
