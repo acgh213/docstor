@@ -791,7 +791,7 @@ Identified from full-app UX test on Feb 10, 2026.
 
 **C-5: CSS variables for consistent theming**
 
-### Phase D — Nice to Have (ongoing)
+### Phase D — Nice to Have (ongoing) ✅ PARTIAL
 
 **D-1: Favicon**
 **D-2: Keyboard shortcuts** (Ctrl+S save, Ctrl+K search, Esc cancel)
