@@ -20,6 +20,7 @@
 
                 <div class="card">
                     <form action="/evidence-bundles" method="POST">
+                                {{.CSRFField}}
                         <div class="form-group">
                             <label for="name">Bundle Name *</label>
                             <input type="text" id="name" name="name" required autofocus

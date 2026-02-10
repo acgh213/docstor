@@ -17,6 +17,53 @@ import (
 	"github.com/exedev/docstor/internal/runbooks"
 )
 
+// checkSensitivity returns true if the user has access. If not, it writes a 403.
+func (s *Server) checkSensitivity(w http.ResponseWriter, r *http.Request, doc *docs.Document) bool {
+	mem := auth.MembershipFromContext(r.Context())
+	if mem == nil || !docs.CanAccess(mem.Role, doc.Sensitivity) {
+		slog.Warn("sensitivity access denied",
+			"doc_id", doc.ID, "sensitivity", doc.Sensitivity,
+			"role", mem.Role, "user_id", mem.UserID)
+		data := s.newPageData(r)
+		data.Title = "Access Denied"
+		data.Error = "You do not have permission to view this document."
+		w.WriteHeader(http.StatusForbidden)
+		s.render(w, r, "docs_list.html", data)
+		return false
+	}
+	return true
+}
+
+// getDocAndCheckAccess loads a doc by ID, checks sensitivity, and returns it.
+// Returns nil if an error/forbidden response was written.
+func (s *Server) getDocAndCheckAccess(w http.ResponseWriter, r *http.Request) *docs.Document {
+	ctx := r.Context()
+	tenant := auth.TenantFromContext(ctx)
+
+	docID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return nil
+	}
+
+	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
+	if errors.Is(err, docs.ErrNotFound) {
+		http.NotFound(w, r)
+		return nil
+	}
+	if err != nil {
+		slog.Error("failed to get document", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return nil
+	}
+
+	if !s.checkSensitivity(w, r, doc) {
+		return nil
+	}
+
+	return doc
+}
+
 type DocPageData struct {
 	PageData
 	Document       *docs.Document
@@ -41,6 +88,7 @@ type ClientOption struct {
 func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenant := auth.TenantFromContext(ctx)
+	mem := auth.MembershipFromContext(ctx)
 
 	docsList, err := s.docs.List(ctx, tenant.ID, nil, nil)
 	if err != nil {
@@ -50,6 +98,17 @@ func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 		data.Error = "Failed to load documents"
 		s.render(w, r, "docs_list.html", data)
 		return
+	}
+
+	// Filter by sensitivity for the current user's role
+	if mem != nil {
+		var filtered []docs.Document
+		for _, d := range docsList {
+			if docs.CanAccess(mem.Role, d.Sensitivity) {
+				filtered = append(filtered, d)
+			}
+		}
+		docsList = filtered
 	}
 
 	data := s.newPageData(r)
@@ -76,6 +135,10 @@ func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to get document", "error", err, "path", path)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if !s.checkSensitivity(w, r, doc) {
 		return
 	}
 
@@ -282,6 +345,10 @@ func (s *Server) handleDocEditByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !s.checkSensitivity(w, r, doc) {
+		return
+	}
+
 	clientsList, _ := s.clients.List(ctx, tenant.ID)
 	var clientOptions []ClientOption
 	for _, c := range clientsList {
@@ -310,20 +377,8 @@ func (s *Server) handleDocSaveByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
-	if errors.Is(err, docs.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get document", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
 		return
 	}
 
@@ -355,7 +410,7 @@ func (s *Server) handleDocSaveByID(w http.ResponseWriter, r *http.Request) {
 
 	if errors.Is(err, docs.ErrConflict) {
 		// Show conflict page
-		currentDoc, _ := s.docs.GetByID(ctx, tenant.ID, docID)
+		currentDoc, _ := s.docs.GetByID(ctx, tenant.ID, doc.ID)
 		pageData := DocPageData{
 			PageData: s.newPageData(r),
 			Document: currentDoc,
@@ -395,20 +450,8 @@ func (s *Server) handleDocHistoryByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenant := auth.TenantFromContext(ctx)
 
-	docID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
-	if errors.Is(err, docs.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get document", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
 		return
 	}
 
@@ -457,9 +500,8 @@ func (s *Server) handleDocRevertByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.NotFound(w, r)
+	preDoc := s.getDocAndCheckAccess(w, r)
+	if preDoc == nil {
 		return
 	}
 
@@ -470,7 +512,7 @@ func (s *Server) handleDocRevertByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Perform revert
-	doc, err := s.docs.Revert(ctx, tenant.ID, docID, revID, user.ID)
+	doc, err := s.docs.Revert(ctx, tenant.ID, preDoc.ID, revID, user.ID)
 	if errors.Is(err, docs.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -501,20 +543,8 @@ func (s *Server) handleDocDiffByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenant := auth.TenantFromContext(ctx)
 
-	docID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
-	if errors.Is(err, docs.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get document", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
 		return
 	}
 
@@ -570,26 +600,14 @@ func (s *Server) handleDocRevisionByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenant := auth.TenantFromContext(ctx)
 
-	docID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.NotFound(w, r)
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
 		return
 	}
 
 	revID, err := uuid.Parse(chi.URLParam(r, "revID"))
 	if err != nil {
 		http.NotFound(w, r)
-		return
-	}
-
-	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
-	if errors.Is(err, docs.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get document", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 

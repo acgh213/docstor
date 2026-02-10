@@ -98,6 +98,7 @@
                                     {{if $membership.IsEditor}}
                                     <form action="/docs/id/{{$doc.ID}}/revert/{{$rev.ID}}" method="POST" style="display: inline;"
                                           onsubmit="return confirm('Revert to this revision? This will create a new revision with this content.')">
+                                {{.CSRFField}}
                                         <button type="submit" class="btn btn-sm btn-warning">Revert</button>
                                     </form>
                                     {{end}}

@@ -49,6 +49,7 @@
                     <div class="form-actions">
                         <a href="/docs/id/{{.Document.ID}}/edit" class="btn btn-primary">Reload Latest Version</a>
                         <form method="POST" action="/docs/id/{{.Document.ID}}/save" style="display: inline;">
+                                {{.CSRFField}}
                             <input type="hidden" name="body" value="{{if .Content}}{{index .Content "yourBody"}}{{end}}">
                             <input type="hidden" name="base_revision_id" value="{{.Document.CurrentRevisionID}}">
                             <input type="hidden" name="message" value="Saved over conflict">

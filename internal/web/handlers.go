@@ -2,7 +2,10 @@ package web
 
 import (
 	"errors"
+	"fmt"
+	"html/template"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/justinas/nosurf"
 
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
@@ -24,14 +28,19 @@ type PageData struct {
 	Content    any
 	Error      string
 	Success    string
+	CSRFToken  string
+	CSRFField  template.HTML
 }
 
 func (s *Server) newPageData(r *http.Request) PageData {
+	token := nosurf.Token(r)
 	return PageData{
 		Title:      "Docstor",
 		User:       auth.UserFromContext(r.Context()),
 		Tenant:     auth.TenantFromContext(r.Context()),
 		Membership: auth.MembershipFromContext(r.Context()),
+		CSRFToken:  token,
+		CSRFField:  template.HTML(`<input type="hidden" name="csrf_token" value="` + token + `">`),
 	}
 }
 
@@ -52,16 +61,48 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, dat
 // Auth handlers
 
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
-	data := PageData{Title: "Login - Docstor"}
+	token := nosurf.Token(r)
+	data := PageData{
+		Title:     "Login - Docstor",
+		CSRFToken: token,
+		CSRFField: template.HTML(`<input type="hidden" name="csrf_token" value="` + token + `">`),
+	}
 	s.render(w, r, "login.html", data)
+}
+
+func loginPageData(r *http.Request, errMsg string) PageData {
+	token := nosurf.Token(r)
+	return PageData{
+		Title:     "Login - Docstor",
+		Error:     errMsg,
+		CSRFToken: token,
+		CSRFField: template.HTML(`<input type="hidden" name="csrf_token" value="` + token + `">`),
+	}
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// Rate limiting — extract IP without port
+	ip := r.RemoteAddr
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		ip = strings.SplitN(fwd, ",", 2)[0]
+	}
+	if host, _, err := net.SplitHostPort(ip); err == nil {
+		ip = host
+	}
+	ip = strings.TrimSpace(ip)
+	allowed, retryAfter := s.loginLimiter.Allow(ip)
+	if !allowed {
+		slog.Warn("login rate limited", "ip", ip, "retry_after", retryAfter)
+		w.Header().Set("Retry-After", fmt.Sprintf("%d", int(retryAfter.Seconds())+1))
+		s.render(w, r, "login.html", loginPageData(r,
+			fmt.Sprintf("Too many login attempts. Please wait %d seconds.", int(retryAfter.Seconds())+1)))
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
-		data := PageData{Title: "Login - Docstor", Error: "Invalid form data"}
-		s.render(w, r, "login.html", data)
+		s.render(w, r, "login.html", loginPageData(r, "Invalid form data"))
 		return
 	}
 
@@ -69,7 +110,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if email == "" || password == "" {
-		data := PageData{Title: "Login - Docstor", Error: "Email and password are required"}
+		data := loginPageData(r, "Email and password are required")
 		s.render(w, r, "login.html", data)
 		return
 	}
@@ -82,13 +123,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	`, email).Scan(&userID, &passwordHash)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		data := PageData{Title: "Login - Docstor", Error: "Invalid email or password"}
+		data := loginPageData(r, "Invalid email or password")
 		s.render(w, r, "login.html", data)
 		return
 	}
 	if err != nil {
 		slog.Error("failed to query user", "error", err)
-		data := PageData{Title: "Login - Docstor", Error: "An error occurred. Please try again."}
+		data := loginPageData(r, "An error occurred. Please try again.")
 		s.render(w, r, "login.html", data)
 		return
 	}
@@ -114,7 +155,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
-		data := PageData{Title: "Login - Docstor", Error: "Invalid email or password"}
+		data := loginPageData(r, "Invalid email or password")
 		s.render(w, r, "login.html", data)
 		return
 	}
@@ -126,13 +167,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	`, userID).Scan(&tenantID)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		data := PageData{Title: "Login - Docstor", Error: "No tenant membership found"}
+		data := loginPageData(r, "No tenant membership found")
 		s.render(w, r, "login.html", data)
 		return
 	}
 	if err != nil {
 		slog.Error("failed to query membership", "error", err)
-		data := PageData{Title: "Login - Docstor", Error: "An error occurred. Please try again."}
+		data := loginPageData(r, "An error occurred. Please try again.")
 		s.render(w, r, "login.html", data)
 		return
 	}
@@ -141,7 +182,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := s.sessions.Create(ctx, userID, tenantID, r.RemoteAddr, r.UserAgent())
 	if err != nil {
 		slog.Error("failed to create session", "error", err)
-		data := PageData{Title: "Login - Docstor", Error: "An error occurred. Please try again."}
+		data := loginPageData(r, "An error occurred. Please try again.")
 		s.render(w, r, "login.html", data)
 		return
 	}
@@ -160,6 +201,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		UserAgent:   r.UserAgent(),
 		Metadata:    map[string]any{"email": email},
 	})
+
+	// Clear rate limit on success
+	s.loginLimiter.Reset(ip)
 
 	// Set session cookie
 	http.SetCookie(w, &http.Cookie{

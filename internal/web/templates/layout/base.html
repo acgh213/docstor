@@ -20,6 +20,7 @@
 
 {{define "head_common"}}
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<meta name="csrf-token" content="{{.CSRFToken}}">
 {{end}}
 
 {{define "alerts"}}
@@ -42,6 +43,7 @@
         <div class="user-menu">
             <span class="user-info">{{.User.Name}}</span>
             <form action="/logout" method="POST" style="display: inline;">
+                                {{.CSRFField}}
                 <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
             </form>
         </div>
@@ -54,6 +56,14 @@
 
 {{define "page_scripts"}}
 <script>
+// HTMX CSRF token injection
+document.addEventListener('htmx:configRequest', function(e) {
+    var token = document.querySelector('meta[name="csrf-token"]');
+    if (token) {
+        e.detail.headers['X-CSRF-Token'] = token.getAttribute('content');
+    }
+});
+
 // Sidebar toggle for mobile
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');

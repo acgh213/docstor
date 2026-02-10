@@ -54,6 +54,7 @@
                                 </td>
                                 <td>
                                     <form action="/docs/id/{{.DocumentID}}/verify" method="POST" style="display: inline;">
+                                {{.CSRFField}}
                                         <button type="submit" class="btn btn-sm btn-success">Verify Now</button>
                                     </form>
                                 </td>

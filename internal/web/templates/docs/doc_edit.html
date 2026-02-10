@@ -42,6 +42,7 @@
 
                 <div class="card">
                     <form method="POST" action="/docs/id/{{.Document.ID}}/save" class="form">
+                                {{.CSRFField}}
                         <input type="hidden" name="base_revision_id" value="{{.Document.CurrentRevisionID}}">
 
                         <div class="form-group">

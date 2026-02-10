@@ -33,6 +33,7 @@
                         <a href="/evidence-bundles/{{$bundle.ID}}/export" class="btn btn-primary">Export ZIP</a>
                         {{if .Membership.IsEditor}}
                         <form action="/evidence-bundles/{{$bundle.ID}}/delete" method="POST" style="display:inline;">
+                                {{.CSRFField}}
                             <button type="submit" class="btn btn-secondary" data-confirm="This will delete the bundle. Attached files will not be removed." data-confirm-title="Delete Bundle?">Delete Bundle</button>
                         </form>
                         {{end}}
@@ -64,6 +65,7 @@
                                     <a href="/attachments/{{.AttachmentID}}" class="btn btn-sm btn-secondary">Download</a>
                                     {{if $.Membership.IsEditor}}
                                     <form action="/evidence-bundles/{{$bundle.ID}}/items/{{.AttachmentID}}/remove" method="POST" style="display:inline;">
+                                {{.CSRFField}}
                                         <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Remove from bundle?')">Remove</button>
                                     </form>
                                     {{end}}
@@ -85,6 +87,7 @@
                 <div class="card">
                     <h3>Add File to Bundle</h3>
                     <form action="/evidence-bundles/{{$bundle.ID}}/items" method="POST">
+                                {{.CSRFField}}
                         <div class="form-group">
                             <label for="attachment_id">Select Attachment</label>
                             <select id="attachment_id" name="attachment_id" required class="form-control" style="max-width:500px;">

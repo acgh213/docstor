@@ -29,6 +29,7 @@
 
                 <div class="card">
                     <form method="POST" action="{{if .Content}}/clients/{{.Content.ID}}{{else}}/clients{{end}}" class="form">
+                                {{.CSRFField}}
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" id="name" name="name" required class="form-control"

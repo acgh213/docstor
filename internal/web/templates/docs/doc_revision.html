@@ -70,6 +70,7 @@
                             <h4>Actions</h4>
                             <form action="/docs/id/{{.Document.ID}}/revert/{{$rev.ID}}" method="POST" 
                                   onsubmit="return confirm('Revert to this revision? This will create a new revision with this content.')">
+                                {{.CSRFField}}
                                 <button type="submit" class="btn btn-warning btn-block">Revert to This Version</button>
                             </form>
                             <p class="form-help" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">

@@ -38,6 +38,7 @@
                 <div class="card">
                     <h3>Upload Attachment</h3>
                     <form action="/attachments/upload" method="POST" enctype="multipart/form-data">
+                                {{.CSRFField}}
                         <input type="hidden" name="document_id" value="{{$doc.ID}}">
                         <div class="form-group">
                             <label for="file">Choose file</label>
@@ -73,6 +74,7 @@
                                     <a href="/attachments/{{.ID}}" class="btn btn-sm btn-secondary">Download</a>
                                     {{if $.Membership.IsEditor}}
                                     <form action="/docs/id/{{$doc.ID}}/attachments/{{.ID}}/unlink" method="POST" style="display:inline;">
+                                {{.CSRFField}}
                                         <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Unlink this attachment?')">Unlink</button>
                                     </form>
                                     {{end}}

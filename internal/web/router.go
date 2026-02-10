@@ -4,14 +4,15 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"time"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/justinas/nosurf"
 
 	"github.com/exedev/docstor/internal/attachments"
 	"github.com/exedev/docstor/internal/audit"
@@ -40,6 +41,7 @@ type Server struct {
 	runbooks    *runbooks.Repository
 	attachments *attachments.Repo
 	storage     attachments.Storage
+	loginLimiter *auth.RateLimiter
 }
 
 func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
@@ -63,16 +65,17 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	attachmentsRepo := attachments.NewRepo(db)
 
 	s := &Server{
-		db:          db,
-		cfg:         cfg,
-		sessions:    sessions,
-		authMw:      authMw,
-		audit:       auditLog,
-		clients:     clientsRepo,
-		docs:        docsRepo,
-		runbooks:    runbooksRepo,
-		attachments: attachmentsRepo,
-		storage:     localStorage,
+		db:           db,
+		cfg:          cfg,
+		sessions:     sessions,
+		authMw:       authMw,
+		audit:        auditLog,
+		clients:      clientsRepo,
+		docs:         docsRepo,
+		runbooks:     runbooksRepo,
+		attachments:  attachmentsRepo,
+		storage:      localStorage,
+		loginLimiter: auth.NewRateLimiter(5, time.Minute),
 	}
 
 	if err := s.loadTemplates(); err != nil {
@@ -87,6 +90,9 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
+
+	// CSRF protection on all non-static routes
+	r.Use(csrfProtect(cfg.IsDevelopment()))
 
 	staticContent, _ := fs.Sub(staticFS, "static")
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticContent))))
@@ -200,6 +206,39 @@ func (s *Server) loadTemplates() error {
 	}
 	s.templates = tmpl
 	return nil
+}
+
+// csrfProtect wraps nosurf for CSRF protection.
+// It exempts specific paths that need it (e.g., HTMX preview).
+func csrfProtect(isDev bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		csrf := nosurf.New(next)
+		csrf.SetBaseCookie(http.Cookie{
+			Name:     "csrf_token",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   !isDev,
+			SameSite: http.SameSiteLaxMode,
+		})
+		// Detect TLS from the actual request (X-Forwarded-Proto or r.TLS)
+		csrf.SetIsTLSFunc(func(r *http.Request) bool {
+			if r.TLS != nil {
+				return true
+			}
+			return r.Header.Get("X-Forwarded-Proto") == "https"
+		})
+		// Custom failure handler
+		csrf.SetFailureHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			slog.Warn("CSRF validation failed",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"reason", nosurf.Reason(r),
+				"ip", r.RemoteAddr,
+			)
+			http.Error(w, "Forbidden - invalid CSRF token", http.StatusForbidden)
+		}))
+		return csrf
+	}
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
