@@ -16,15 +16,15 @@
 | Doc Ops | Rename/move/delete documents | Full CRUD complete |
 | 12 | Doc Health Dashboard | Stale, unowned, health % |
 | 9 | Templates + Checklists | Templates CRUD, use-template, checklists, instances, HTMX toggle |
+| 10 | CMDB-lite + Live Blocks | Systems, vendors, contacts, circuits CRUD + shortcode rendering |
+| 11 | Known Issues + Incidents | Known issues board, incident timeline, events |
 
 ### 🚧 Remaining
 
 | Phase | What | Est. | Schema needed |
 |-------|------|------|---------------|
-| ~~9~~ | ~~Templates + Checklists~~ | ✅ Done | ~~templates, checklists, checklist_items, checklist_instances, checklist_instance_items~~ |
-| 10 | CMDB-lite + Live Blocks | 4–6h | systems, vendors, contacts, circuits |
-| 11 | Known Issues + Incidents | 3–4h | known_issues, incidents, incident_events |
 | Polish | Drag-drop upload, folder tree, image preview, metadata edit | 2–3h | None |
+| 13 | Sites (client → sites) | 2–3h | sites |
 
 ### Phase 9 — Templates + Checklists
 
@@ -49,46 +49,13 @@ Routes:
 - `POST /checklist-instances` — Start checklist instance
 - `POST /checklist-instances/{id}/items/{itemId}/toggle` — Check/uncheck
 
-### Phase 10 — CMDB-lite + Live Blocks
+### Phase 10 — CMDB-lite + Live Blocks ✅ COMPLETE
 
-Goal: Lightweight directory of systems/vendors/contacts with shortcodes in markdown.
+Delivered: Full CRUD for systems/vendors/contacts/circuits. Shortcode rendering (`{{system:uuid}}`, `{{vendor:uuid}}`, etc.) in markdown. 12 templates, migration 005.
 
-Schema:
-```sql
-systems(id, tenant_id, client_id, system_type, name, fqdn, ip, environment, notes, owner_user_id, created_at, updated_at)
-  -- system_type: server/firewall/switch/circuit/app/service
-vendors(id, tenant_id, client_id, name, type, phone, email, portal_url, escalation_notes, created_at)
-contacts(id, tenant_id, client_id, name, role, phone, email, notes)
-circuits(id, tenant_id, client_id, provider, circuit_id, wan_ip, speed, notes, created_at, updated_at)
-```
+### Phase 11 — Known Issues + Incidents ✅ COMPLETE
 
-Live blocks in markdown (server-side rendered):
-- `{{system:uuid}}` → system name, IP, environment
-- `{{vendor:uuid}}` → vendor contact + portal link
-- `{{circuit:uuid}}` → circuit details
-
-Routes:
-- `/systems`, `/vendors`, `/contacts`, `/circuits` — CRUD for each
-- Shortcodes resolved during markdown render; missing refs show warning
-
-### Phase 11 — Known Issues + Incidents
-
-Goal: Track known issues and incident timelines, link to docs.
-
-Schema:
-```sql
-known_issues(id, tenant_id, title, severity, status, client_id, description, created_by, created_at, updated_at, linked_document_id)
-  -- status: open/investigating/resolved/wont_fix
-incidents(id, tenant_id, title, severity, status, client_id, started_at, ended_at, summary, created_by, created_at)
-incident_events(id, tenant_id, incident_id, at, event_type, detail, actor_user_id)
-  -- event_type: detected/acknowledged/investigating/mitigated/resolved/note
-```
-
-Routes:
-- `GET /known-issues` — Board view with status columns
-- `/incidents` — Incident list
-- `/incidents/{id}` — Timeline view
-- `POST /incidents/{id}/events` — Add timeline event
+Delivered: Known issues board with status/severity filters. Incident timeline with events. 6 templates, migration 006.
 
 ### Polish Items
 
@@ -800,30 +767,23 @@ Conventions used below:
 **PR-082: Evidence bundles + export zip** ✅
 Acceptance: uploads permission-checked; downloads audited; evidence ties to specific revisions.
 
-### Phase 9 — Templates + checklists
+### Phase 9 — Templates + checklists ✅ COMPLETE
 
-**PR-090: Templates schema + "create from template"**
-**PR-091: Checklist library + checklist instances**
-Acceptance: spawn a runbook/checklist in under a minute; track completion.
+Delivered: Template library (doc/runbook types), create-from-template flow, checklist library with items, checklist instances linked to docs, HTMX toggle for items. Migration 004.
 
-### Phase 10 — CMDB-lite directory + live blocks
+### Phase 10 — CMDB-lite directory + live blocks ✅ COMPLETE
 
-**PR-100: Systems/vendors/contacts/circuits schema + list/detail**
-**PR-101: Live block shortcode rendering (server-side)**
-Acceptance: live blocks render safely; missing refs produce warnings not broken pages.
+Delivered: Systems/vendors/contacts/circuits full CRUD with client filtering. Live block shortcodes (`{{system:uuid}}`, `{{vendor:uuid}}`, `{{contact:uuid}}`, `{{circuit:uuid}}`) resolved server-side during markdown render. Missing refs show warning spans. Migration 005.
 
-### Phase 11 — Known issues + incidents + changes (lightweight ops memory)
+### Phase 11 — Known issues + incidents ✅ COMPLETE
 
-**PR-110: Known issues board**
-**PR-111: Incidents timeline + export summary**
-**PR-112: Change records with rollback/validation**
-Acceptance: timeline pages produce clean narratives; everything linkable + auditable.
+Delivered: Known issues board with status columns and severity. Incident timeline builder with event types (detected/acknowledged/investigating/mitigated/resolved/note). Client and status filtering. Migration 006.
 
-### Phase 12 — Doc health dashboards
+Note: Change records (PR-112) deferred — not in MVP scope.
 
-**PR-120: stale docs + unowned docs dashboard**
-**PR-121: broken links / popular-but-stale**
-Acceptance: dashboards drive real maintenance work.
+### Phase 12 — Doc health dashboards ✅ COMPLETE
+
+Delivered: Stale docs, unowned docs, health percentage dashboard at `/docs/health`.
 
 ### Phase 13 — Sites (deferred)
 

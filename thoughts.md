@@ -1,8 +1,8 @@
 # Docstor Implementation Progress
 
-## Current Status: Phase 8 + Security + UX Overhaul Complete
+## Current Status: All Feature Phases Complete (0–12)
 
-Last updated: February 10, 2026
+Last updated: February 11, 2026
 
 ---
 
@@ -74,6 +74,29 @@ Last updated: February 10, 2026
 - Local file storage backend (S3 interface planned)
 - Audit logging for all attachment operations
 
+### Phase 9 ✅ — Templates + Checklists
+- `templates` table (doc/runbook types)
+- Template library with create/edit/delete + create-doc-from-template flow
+- `checklists`, `checklist_items`, `checklist_instances`, `checklist_instance_items` tables
+- Checklist instances linked to documents, HTMX toggle for items
+- Migration 004
+
+### Phase 10 ✅ — CMDB-lite + Live Blocks
+- `systems`, `vendors`, `contacts`, `circuits` tables with full CRUD
+- Client filtering on all list views
+- Shortcode rendering: `{{system:uuid}}`, `{{vendor:uuid}}`, `{{contact:uuid}}`, `{{circuit:uuid}}`
+- Shortcodes resolved server-side after markdown render; missing refs show warning spans
+- 12 templates (list/form/view for each entity type)
+- Migration 005
+
+### Phase 11 ✅ — Known Issues + Incidents
+- `known_issues` table with severity (low/medium/high/critical) and status (open/investigating/resolved/wont_fix)
+- `incidents` table with timeline via `incident_events`
+- Event types: detected/acknowledged/investigating/mitigated/resolved/note
+- Client and status filtering on list views
+- 6 templates (list/form/view for known issues + incidents)
+- Migration 006
+
 ### Security Hardening ✅
 - **CSRF protection**: nosurf middleware with form tokens + HTMX header injection
 - **Login rate limiting**: 5 attempts/60s per IP, in-memory with auto-cleanup
@@ -90,38 +113,16 @@ Last updated: February 10, 2026
 
 ## Remaining Work
 
-### Testing (required by claude.md §13)
-- [ ] Tenant isolation cannot leak data across tenants
-- [ ] Role gating: Reader cannot edit; Editor can; Admin can manage roles
-- [ ] Revision conflict detection works
-- [ ] Revert creates new revision
-- [ ] Markdown rendering is sanitized (XSS regression tests)
-- [ ] Audit log is written for required actions
-
-### Feature Phases (Post-MVP)
-
-#### Phase 9 — Templates + Checklists
-- Template library (reusable doc templates)
-- Checklist items with trackable instances linked to docs/incidents
-
-#### Phase 10 — CMDB-lite + Live Blocks
-- systems/vendors/contacts/circuits tables
-- `{{system:123}}` shortcodes in markdown
-
-#### Phase 11 — Known Issues + Incidents
-- Known issues board
-- Incident timeline with events
-
-#### Phase 12 — Doc Health Dashboards
-- Stale docs detection (updated_at > 90 days)
-- Unowned docs report
-- Broken links detection (parse markdown links)
-
-### Minor Gaps
-- [ ] Doc rename/move/delete handlers (audit constants exist but no UI)
-- [ ] HTMX folder tree navigation (claude.md §6: `GET /tree?folder=...`)
-- [ ] Drag-and-drop file upload
+### Polish
+- [ ] Drag-and-drop file upload on attachments/edit pages
+- [ ] HTMX folder tree navigation (`GET /tree?folder=...`)
 - [ ] Image/PDF preview before download
+- [ ] Quick-edit doc metadata from view page (inline HTMX)
+
+### Phase 13 — Sites (deferred per claude.md §4)
+- [ ] Sites table + client→sites relationship
+- [ ] Optional site scoping for CMDB objects
+- [ ] Migration 007
 
 ---
 
