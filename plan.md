@@ -1,3 +1,109 @@
+# Docstor Plan
+
+## Implementation Status (as of Feb 2026)
+
+### ✅ Complete
+
+| Phase | What | Notes |
+|-------|------|-------|
+| 0–7.5 | MVP: Auth, docs, search, runbooks, editor | Core platform |
+| 8 | Attachments + Evidence Bundles | Upload, link, bundle, ZIP export |
+| Security | CSRF (nosurf), rate limiting, sensitivity gating | S-1, S-2, S-3 |
+| UX A–D | Mobile, flash messages, breadcrumbs, editor polish | 22/25 UX issues resolved |
+| Tests | Tenant isolation, role gating, XSS, conflict, audit | 33 tests, -race clean |
+| Admin | User management, audit viewer, tenant settings | /admin section |
+| Landing | Public landing page + improved dashboard | Stats, recent docs, overdue |
+| Doc Ops | Rename/move/delete documents | Full CRUD complete |
+| 12 | Doc Health Dashboard | Stale, unowned, health % |
+
+### 🚧 Remaining
+
+| Phase | What | Est. | Schema needed |
+|-------|------|------|---------------|
+| 9 | Templates + Checklists | 3–4h | templates, checklists, checklist_items, checklist_instances, checklist_instance_items |
+| 10 | CMDB-lite + Live Blocks | 4–6h | systems, vendors, contacts, circuits |
+| 11 | Known Issues + Incidents | 3–4h | known_issues, incidents, incident_events |
+| Polish | Drag-drop upload, folder tree, image preview, metadata edit | 2–3h | None |
+
+### Phase 9 — Templates + Checklists
+
+Goal: Reusable doc/runbook templates and trackable checklists.
+
+Schema:
+```sql
+templates(id, tenant_id, name, template_type, body_markdown, default_metadata_json, created_by, created_at)
+  -- template_type: 'doc' | 'runbook' | 'incident_rca' | 'change'
+checklists(id, tenant_id, name, description, created_by, created_at)
+checklist_items(id, tenant_id, checklist_id, position, text)
+checklist_instances(id, tenant_id, checklist_id, linked_type, linked_id, status, created_by, created_at, completed_at)
+checklist_instance_items(id, tenant_id, instance_id, item_id, done_by_user_id, done_at, note)
+```
+
+Routes:
+- `GET /templates` — Template library
+- `GET /templates/new`, `POST /templates` — Create template
+- `GET /templates/{id}` — View template
+- `POST /docs/new?template={id}` — Create doc from template
+- `GET /checklists` — Checklist library
+- `POST /checklist-instances` — Start checklist instance
+- `POST /checklist-instances/{id}/items/{itemId}/toggle` — Check/uncheck
+
+### Phase 10 — CMDB-lite + Live Blocks
+
+Goal: Lightweight directory of systems/vendors/contacts with shortcodes in markdown.
+
+Schema:
+```sql
+systems(id, tenant_id, client_id, system_type, name, fqdn, ip, environment, notes, owner_user_id, created_at, updated_at)
+  -- system_type: server/firewall/switch/circuit/app/service
+vendors(id, tenant_id, client_id, name, type, phone, email, portal_url, escalation_notes, created_at)
+contacts(id, tenant_id, client_id, name, role, phone, email, notes)
+circuits(id, tenant_id, client_id, provider, circuit_id, wan_ip, speed, notes, created_at, updated_at)
+```
+
+Live blocks in markdown (server-side rendered):
+- `{{system:uuid}}` → system name, IP, environment
+- `{{vendor:uuid}}` → vendor contact + portal link
+- `{{circuit:uuid}}` → circuit details
+
+Routes:
+- `/systems`, `/vendors`, `/contacts`, `/circuits` — CRUD for each
+- Shortcodes resolved during markdown render; missing refs show warning
+
+### Phase 11 — Known Issues + Incidents
+
+Goal: Track known issues and incident timelines, link to docs.
+
+Schema:
+```sql
+known_issues(id, tenant_id, title, severity, status, client_id, description, created_by, created_at, updated_at, linked_document_id)
+  -- status: open/investigating/resolved/wont_fix
+incidents(id, tenant_id, title, severity, status, client_id, started_at, ended_at, summary, created_by, created_at)
+incident_events(id, tenant_id, incident_id, at, event_type, detail, actor_user_id)
+  -- event_type: detected/acknowledged/investigating/mitigated/resolved/note
+```
+
+Routes:
+- `GET /known-issues` — Board view with status columns
+- `/incidents` — Incident list
+- `/incidents/{id}` — Timeline view
+- `POST /incidents/{id}/events` — Add timeline event
+
+### Polish Items
+
+- [ ] Drag-and-drop file upload on edit/attachments pages
+- [ ] HTMX folder tree navigation (`GET /tree?folder=...`)
+- [ ] Image/PDF preview before download
+- [ ] Quick-edit doc metadata from view page (inline HTMX)
+
+---
+
+## Original Architecture Document
+
+> The following is the original architecture plan for reference.
+
+---
+
 Absolutely, Cassie. Here’s a full Docstor plan that includes the “well-stocked documentation + a little more” upgrades (evidence bundles, CMDB-lite directory, templates/checklists, known issues/incidents, doc health + linkbacks), while staying faithful to “no React, no obscene JavaScript.”
 
 I’m writing this as something you can drop straight into a `plan.md` for review.
