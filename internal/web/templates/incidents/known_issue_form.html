@@ -1,0 +1,103 @@
+{{define "known_issue_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/known-issues">Known Issues</a>
+                    <span class="separator">/</span>
+                    {{if .Content.Issue}}<a href="/known-issues/{{.Content.Issue.ID}}">{{.Content.Issue.Title}}</a><span class="separator">/</span> Edit{{else}}New Known Issue{{end}}
+                </nav>
+
+                <div class="page-header">
+                    <h2>{{if .Content.Issue}}Edit Known Issue{{else}}New Known Issue{{end}}</h2>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="{{if .Content.Issue}}/known-issues/{{.Content.Issue.ID}}{{else}}/known-issues{{end}}" class="form">
+                        {{.CSRFField}}
+                        <div class="form-group">
+                            <label for="title">Title *</label>
+                            <input type="text" id="title" name="title" required class="form-control"
+                                   value="{{if .Content.Issue}}{{.Content.Issue.Title}}{{end}}">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="severity">Severity *</label>
+                                <select id="severity" name="severity" required class="form-control">
+                                    <option value="">Select...</option>
+                                    {{$sev := "medium"}}
+                                    {{if .Content.Issue}}{{$sev = .Content.Issue.Severity}}{{end}}
+                                    <option value="low" {{if eq $sev "low"}}selected{{end}}>Low</option>
+                                    <option value="medium" {{if eq $sev "medium"}}selected{{end}}>Medium</option>
+                                    <option value="high" {{if eq $sev "high"}}selected{{end}}>High</option>
+                                    <option value="critical" {{if eq $sev "critical"}}selected{{end}}>Critical</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Status *</label>
+                                <select id="status" name="status" required class="form-control">
+                                    <option value="">Select...</option>
+                                    {{$st := "open"}}
+                                    {{if .Content.Issue}}{{$st = .Content.Issue.Status}}{{end}}
+                                    <option value="open" {{if eq $st "open"}}selected{{end}}>Open</option>
+                                    <option value="investigating" {{if eq $st "investigating"}}selected{{end}}>Investigating</option>
+                                    <option value="resolved" {{if eq $st "resolved"}}selected{{end}}>Resolved</option>
+                                    <option value="wont_fix" {{if eq $st "wont_fix"}}selected{{end}}>Won't Fix</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="client_id">Client</label>
+                            <select id="client_id" name="client_id" class="form-control">
+                                <option value="">No client</option>
+                                {{$cid := ""}}
+                                {{if .Content.Issue}}{{if .Content.Issue.ClientID}}{{$cid = .Content.Issue.ClientID.String}}{{end}}{{end}}
+                                {{range .Content.Clients}}
+                                <option value="{{.ID}}" {{if eq $cid (.ID.String)}}selected{{end}}>{{.Name}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="5" class="form-control"
+                                      placeholder="Describe the known issue">{{if .Content.Issue}}{{.Content.Issue.Description}}{{end}}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="workaround">Workaround</label>
+                            <textarea id="workaround" name="workaround" rows="4" class="form-control"
+                                      placeholder="Steps to work around this issue">{{if .Content.Issue}}{{.Content.Issue.Workaround}}{{end}}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="linked_document_id">Linked Document ID</label>
+                            <input type="text" id="linked_document_id" name="linked_document_id" class="form-control"
+                                   value="{{if .Content.Issue}}{{if .Content.Issue.LinkedDocumentID}}{{.Content.Issue.LinkedDocumentID}}{{end}}{{end}}"
+                                   placeholder="Optional UUID of related document">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{{if .Content.Issue}}Save Changes{{else}}Create Known Issue{{end}}</button>
+                            <a href="/known-issues" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

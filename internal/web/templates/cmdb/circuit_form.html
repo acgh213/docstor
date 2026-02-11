@@ -1,0 +1,100 @@
+{{define "circuit_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/circuits">Circuits</a>
+                    <span class="separator">/</span>
+                    {{if .Content.Circuit}}<a href="/circuits/{{.Content.Circuit.ID}}">{{.Content.Circuit.Provider}} {{.Content.Circuit.CircuitID}}</a><span class="separator">/</span> Edit{{else}}New Circuit{{end}}
+                </nav>
+
+                <div class="page-header">
+                    <h2>{{if .Content.Circuit}}Edit Circuit{{else}}New Circuit{{end}}</h2>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="{{if .Content.Circuit}}/circuits/{{.Content.Circuit.ID}}{{else}}/circuits{{end}}" class="form">
+                        {{.CSRFField}}
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="provider">Provider *</label>
+                                <input type="text" id="provider" name="provider" required class="form-control"
+                                       value="{{if .Content.Circuit}}{{.Content.Circuit.Provider}}{{end}}" placeholder="e.g., Comcast">
+                            </div>
+                            <div class="form-group">
+                                <label for="circuit_id">Circuit ID *</label>
+                                <input type="text" id="circuit_id" name="circuit_id" required class="form-control"
+                                       value="{{if .Content.Circuit}}{{.Content.Circuit.CircuitID}}{{end}}" placeholder="e.g., 04.L1GS.12345">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="circuit_type">Type *</label>
+                                <select id="circuit_type" name="circuit_type" required class="form-control">
+                                    <option value="">Select type...</option>
+                                    {{$ct := ""}}
+                                    {{if .Content.Circuit}}{{$ct = .Content.Circuit.CircuitType}}{{end}}
+                                    <option value="fiber" {{if eq $ct "fiber"}}selected{{end}}>Fiber</option>
+                                    <option value="cable" {{if eq $ct "cable"}}selected{{end}}>Cable</option>
+                                    <option value="dsl" {{if eq $ct "dsl"}}selected{{end}}>DSL</option>
+                                    <option value="wireless" {{if eq $ct "wireless"}}selected{{end}}>Wireless</option>
+                                    <option value="mpls" {{if eq $ct "mpls"}}selected{{end}}>MPLS</option>
+                                    <option value="other" {{if eq $ct "other"}}selected{{end}}>Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="speed">Speed</label>
+                                <input type="text" id="speed" name="speed" class="form-control"
+                                       value="{{if .Content.Circuit}}{{.Content.Circuit.Speed}}{{end}}" placeholder="e.g., 1 Gbps">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="wan_ip">WAN IP</label>
+                                <input type="text" id="wan_ip" name="wan_ip" class="form-control"
+                                       value="{{if .Content.Circuit}}{{.Content.Circuit.WanIP}}{{end}}" placeholder="203.0.113.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="client_id">Client</label>
+                                <select id="client_id" name="client_id" class="form-control">
+                                    <option value="">No client</option>
+                                    {{$cid := ""}}
+                                    {{if .Content.Circuit}}{{if .Content.Circuit.ClientID}}{{$cid = .Content.Circuit.ClientID.String}}{{end}}{{end}}
+                                    {{range .Content.Clients}}
+                                    <option value="{{.ID}}" {{if eq $cid (.ID.String)}}selected{{end}}>{{.Name}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes" rows="3" class="form-control">{{if .Content.Circuit}}{{.Content.Circuit.Notes}}{{end}}</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{{if .Content.Circuit}}Save Changes{{else}}Create Circuit{{end}}</button>
+                            <a href="/circuits" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

@@ -148,6 +148,8 @@ func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			slog.Error("failed to render markdown", "error", err)
 		}
+		// Resolve CMDB shortcodes in rendered HTML
+		rendered = s.cmdb.RenderShortcodes(ctx, tenant.ID, rendered)
 		renderedBody = template.HTML(rendered)
 	}
 
@@ -485,6 +487,12 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Resolve CMDB shortcodes in preview
+	ctx := r.Context()
+	if tenant := auth.TenantFromContext(ctx); tenant != nil {
+		rendered = s.cmdb.RenderShortcodes(ctx, tenant.ID, rendered)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(rendered))
 }
@@ -627,6 +635,7 @@ func (s *Server) handleDocRevisionByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to render markdown", "error", err)
 	}
+	rendered = s.cmdb.RenderShortcodes(ctx, tenant.ID, rendered)
 	renderedBody = template.HTML(rendered)
 
 	pageData := DocPageData{

@@ -1,0 +1,121 @@
+{{define "incident_view.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/incidents">Incidents</a>
+                    <span class="separator">/</span>
+                    {{.Content.Incident.Title}}
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>🚨 {{.Content.Incident.Title}}</h2>
+                        {{if .Membership.IsEditor}}
+                        <div>
+                            <a href="/incidents/{{.Content.Incident.ID}}/edit" class="btn btn-secondary">Edit</a>
+                            <form method="POST" action="/incidents/{{.Content.Incident.ID}}/delete" style="display:inline" onsubmit="return confirm('Delete this incident?')">
+                                {{.CSRFField}}
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <dl class="detail-list">
+                        <dt>Severity</dt>
+                        <dd><span class="severity-badge severity-{{.Content.Incident.Severity}}">{{.Content.Incident.Severity}}</span></dd>
+                        <dt>Status</dt>
+                        <dd><span class="status-badge status-{{.Content.Incident.Status}}">{{.Content.Incident.Status}}</span></dd>
+                        <dt>Client</dt>
+                        <dd>{{if .Content.Incident.ClientName}}{{.Content.Incident.ClientName}}{{else}}<span class="text-muted">None</span>{{end}}</dd>
+                        <dt>Started</dt>
+                        <dd>{{.Content.Incident.StartedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
+                        {{if .Content.Incident.EndedAt}}
+                        <dt>Ended</dt>
+                        <dd>{{.Content.Incident.EndedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
+                        {{end}}
+                        <dt>Created By</dt>
+                        <dd>{{if .Content.Incident.CreatedByName}}{{.Content.Incident.CreatedByName}}{{else}}<span class="text-muted">Unknown</span>{{end}}</dd>
+                    </dl>
+                </div>
+
+                {{if .Content.Incident.Summary}}
+                <div class="card">
+                    <h3>Summary</h3>
+                    <p>{{.Content.Incident.Summary}}</p>
+                </div>
+                {{end}}
+
+                <div class="card">
+                    <h3>Timeline ({{len .Content.Events}} events)</h3>
+
+                    {{if .Content.Events}}
+                    <div class="timeline">
+                        {{range .Content.Events}}
+                        <div class="timeline-event">
+                            <div class="timeline-event-header">
+                                <span class="badge badge-{{.EventType}}">{{.EventType}}</span>
+                                <span class="text-muted">{{.CreatedAt.Format "Jan 2, 15:04"}}</span>
+                                {{if .ActorName}}<span class="text-muted">— {{.ActorName}}</span>{{end}}
+                            </div>
+                            <div class="timeline-event-detail">{{.Detail}}</div>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <p class="text-muted">No events recorded yet.</p>
+                    {{end}}
+
+                    {{if .Membership.IsEditor}}
+                    <hr>
+                    <h4>Add Event</h4>
+                    <form method="POST" action="/incidents/{{.Content.Incident.ID}}/events" class="form">
+                        {{.CSRFField}}
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="event_type">Type</label>
+                                <select id="event_type" name="event_type" required class="form-control">
+                                    <option value="">Select...</option>
+                                    <option value="update">Update</option>
+                                    <option value="escalation">Escalation</option>
+                                    <option value="mitigation">Mitigation</option>
+                                    <option value="resolution">Resolution</option>
+                                    <option value="communication">Communication</option>
+                                    <option value="note">Note</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="detail">Detail</label>
+                            <textarea id="detail" name="detail" rows="3" required class="form-control"
+                                      placeholder="What happened?"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Add Event</button>
+                    </form>
+                    {{end}}
+                </div>
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

@@ -1,0 +1,85 @@
+{{define "contacts_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">Contacts</nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>👤 Contacts</h2>
+                        {{if .Membership.IsEditor}}
+                        <a href="/contacts/new" class="btn btn-primary">New Contact</a>
+                        {{end}}
+                    </div>
+                </div>
+
+                {{if .Content}}
+                <div class="card" style="margin-bottom: 1rem;">
+                    <form method="GET" action="/contacts" class="filter-row">
+                        <select name="client_id" onchange="this.form.submit()">
+                            <option value="">All Clients</option>
+                            {{range .Content.Clients}}
+                            <option value="{{.ID}}" {{if eq $.Content.SelectedClientID (.ID.String)}}selected{{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </form>
+                </div>
+
+                <div class="card">
+                    {{if .Content.Contacts}}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Content.Contacts}}
+                            <tr>
+                                <td><a href="/contacts/{{.ID}}">{{.Name}}</a></td>
+                                <td>{{if .Role}}{{.Role}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                                <td>{{if .Phone}}{{.Phone}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                                <td>{{if .Email}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{else}}<span class="text-muted">—</span>{{end}}</td>
+                                <td><a href="/contacts/{{.ID}}" class="btn btn-secondary btn-sm">View</a></td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    {{else}}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <h3>No contacts yet</h3>
+                        <p>Add contacts to track key people for your clients.</p>
+                        {{if .Membership.IsEditor}}
+                        <a href="/contacts/new" class="btn btn-primary">Add Contact</a>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

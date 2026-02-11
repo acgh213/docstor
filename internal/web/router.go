@@ -20,6 +20,8 @@ import (
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/checklists"
 	"github.com/exedev/docstor/internal/clients"
+	"github.com/exedev/docstor/internal/cmdb"
+	"github.com/exedev/docstor/internal/incidents"
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
@@ -46,6 +48,8 @@ type Server struct {
 	storage         attachments.Storage
 	templates_repo  *tmplpkg.Repository
 	checklists      *checklists.Repository
+	cmdb            *cmdb.Repository
+	incidents       *incidents.Repository
 	loginLimiter    *auth.RateLimiter
 }
 
@@ -70,6 +74,8 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	attachmentsRepo := attachments.NewRepo(db)
 	templatesRepo := tmplpkg.NewRepository(db)
 	checklistsRepo := checklists.NewRepository(db)
+	cmdbRepo := cmdb.NewRepository(db)
+	incidentsRepo := incidents.NewRepository(db)
 
 	s := &Server{
 		db:           db,
@@ -84,6 +90,8 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		storage:         localStorage,
 		templates_repo:  templatesRepo,
 		checklists:      checklistsRepo,
+		cmdb:            cmdbRepo,
+		incidents:       incidentsRepo,
 		loginLimiter:    auth.NewRateLimiter(5, time.Minute),
 	}
 
@@ -213,6 +221,73 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 			r.Post("/{id}", s.handleClientUpdate)
 		})
 
+		// CMDB - Systems
+		r.Route("/systems", func(r chi.Router) {
+			r.Get("/", s.handleSystemsList)
+			r.Get("/new", s.handleSystemNew)
+			r.Post("/", s.handleSystemCreate)
+			r.Get("/{id}", s.handleSystemView)
+			r.Get("/{id}/edit", s.handleSystemEdit)
+			r.Post("/{id}", s.handleSystemUpdate)
+			r.Post("/{id}/delete", s.handleSystemDelete)
+		})
+
+		// CMDB - Vendors
+		r.Route("/vendors", func(r chi.Router) {
+			r.Get("/", s.handleVendorsList)
+			r.Get("/new", s.handleVendorNew)
+			r.Post("/", s.handleVendorCreate)
+			r.Get("/{id}", s.handleVendorView)
+			r.Get("/{id}/edit", s.handleVendorEdit)
+			r.Post("/{id}", s.handleVendorUpdate)
+			r.Post("/{id}/delete", s.handleVendorDelete)
+		})
+
+		// CMDB - Contacts
+		r.Route("/contacts", func(r chi.Router) {
+			r.Get("/", s.handleContactsList)
+			r.Get("/new", s.handleContactNew)
+			r.Post("/", s.handleContactCreate)
+			r.Get("/{id}", s.handleContactView)
+			r.Get("/{id}/edit", s.handleContactEdit)
+			r.Post("/{id}", s.handleContactUpdate)
+			r.Post("/{id}/delete", s.handleContactDelete)
+		})
+
+		// CMDB - Circuits
+		r.Route("/circuits", func(r chi.Router) {
+			r.Get("/", s.handleCircuitsList)
+			r.Get("/new", s.handleCircuitNew)
+			r.Post("/", s.handleCircuitCreate)
+			r.Get("/{id}", s.handleCircuitView)
+			r.Get("/{id}/edit", s.handleCircuitEdit)
+			r.Post("/{id}", s.handleCircuitUpdate)
+			r.Post("/{id}/delete", s.handleCircuitDelete)
+		})
+
+		// Known Issues
+		r.Route("/known-issues", func(r chi.Router) {
+			r.Get("/", s.handleKnownIssuesList)
+			r.Get("/new", s.handleKnownIssueNew)
+			r.Post("/", s.handleKnownIssueCreate)
+			r.Get("/{id}", s.handleKnownIssueView)
+			r.Get("/{id}/edit", s.handleKnownIssueEdit)
+			r.Post("/{id}", s.handleKnownIssueUpdate)
+			r.Post("/{id}/delete", s.handleKnownIssueDelete)
+		})
+
+		// Incidents
+		r.Route("/incidents", func(r chi.Router) {
+			r.Get("/", s.handleIncidentsList)
+			r.Get("/new", s.handleIncidentNew)
+			r.Post("/", s.handleIncidentCreate)
+			r.Get("/{id}", s.handleIncidentView)
+			r.Get("/{id}/edit", s.handleIncidentEdit)
+			r.Post("/{id}", s.handleIncidentUpdate)
+			r.Post("/{id}/events", s.handleIncidentAddEvent)
+			r.Post("/{id}/delete", s.handleIncidentDelete)
+		})
+
 		// Admin
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(s.authMw.RequireRole("admin"))
@@ -302,6 +377,8 @@ func (s *Server) loadTemplates() error {
 		"templates/admin/*.html",
 		"templates/templates/*.html",
 		"templates/checklists/*.html",
+		"templates/cmdb/*.html",
+		"templates/incidents/*.html",
 		"templates/landing.html",
 	)
 	if err != nil {
