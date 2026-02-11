@@ -109,8 +109,16 @@
                         {{end}}
 
                         <div class="card">
-                            <h4>Document Info</h4>
+                            <h4>Document Info
+                                {{if $.Membership.IsEditor}}
+                                <button type="button" class="btn btn-sm btn-secondary" style="float:right; font-size: 0.75rem;" onclick="this.closest('.card').querySelector('.meta-edit-form').style.display = this.closest('.card').querySelector('.meta-edit-form').style.display === 'none' ? 'block' : 'none'; this.textContent = this.textContent === 'Edit' ? 'Cancel' : 'Edit';">Edit</button>
+                                {{end}}
+                            </h4>
                             <dl class="meta-list">
+                                <dt>Type</dt>
+                                <dd>{{if eq .Document.DocType "runbook"}}<span class="badge badge-warning">Runbook</span>{{else}}<span class="badge">Doc</span>{{end}}</dd>
+                                <dt>Sensitivity</dt>
+                                <dd><span class="badge">{{.Document.Sensitivity}}</span></dd>
                                 <dt>Created</dt>
                                 <dd>{{.Document.CreatedAt.Format "Jan 2, 2006"}}</dd>
                                 <dt>Updated</dt>
@@ -118,6 +126,13 @@
                                 {{if .Document.Owner}}
                                 <dt>Owner</dt>
                                 <dd>{{.Document.Owner.Name}}</dd>
+                                {{else}}
+                                <dt>Owner</dt>
+                                <dd><span class="text-muted">Unassigned</span></dd>
+                                {{end}}
+                                {{if .Document.Client}}
+                                <dt>Client</dt>
+                                <dd><a href="/clients/{{.Document.Client.ID}}">{{.Document.Client.Name}}</a></dd>
                                 {{end}}
                                 {{if .Document.CurrentRevision}}
                                 {{if .Document.CurrentRevision.Author}}
@@ -126,6 +141,51 @@
                                 {{end}}
                                 {{end}}
                             </dl>
+                            {{if $.Membership.IsEditor}}
+                            <form class="meta-edit-form" style="display:none; margin-top: 1rem; border-top: 1px solid var(--border-color, #ddd); padding-top: 1rem;"
+                                  method="POST" action="/docs/id/{{.Document.ID}}/metadata"
+                                  hx-post="/docs/id/{{.Document.ID}}/metadata" hx-swap="none">
+                                {{$.CSRFField}}
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label for="meta_doc_type" style="font-size: 0.85rem;">Type</label>
+                                    <select id="meta_doc_type" name="doc_type" class="form-control" style="font-size: 0.85rem;">
+                                        <option value="doc" {{if eq .Document.DocType "doc"}}selected{{end}}>Doc</option>
+                                        <option value="runbook" {{if eq .Document.DocType "runbook"}}selected{{end}}>Runbook</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label for="meta_sensitivity" style="font-size: 0.85rem;">Sensitivity</label>
+                                    <select id="meta_sensitivity" name="sensitivity" class="form-control" style="font-size: 0.85rem;">
+                                        <option value="public-internal" {{if eq .Document.Sensitivity "public-internal"}}selected{{end}}>Public Internal</option>
+                                        <option value="restricted" {{if eq .Document.Sensitivity "restricted"}}selected{{end}}>Restricted</option>
+                                        <option value="confidential" {{if eq .Document.Sensitivity "confidential"}}selected{{end}}>Confidential</option>
+                                    </select>
+                                </div>
+                                {{if .Users}}
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label for="meta_owner" style="font-size: 0.85rem;">Owner</label>
+                                    <select id="meta_owner" name="owner_user_id" class="form-control" style="font-size: 0.85rem;">
+                                        <option value="">-- None --</option>
+                                        {{range .Users}}
+                                        <option value="{{.ID}}" {{if .Selected}}selected{{end}}>{{.Name}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                {{end}}
+                                {{if .ClientOptions}}
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label for="meta_client" style="font-size: 0.85rem;">Client</label>
+                                    <select id="meta_client" name="client_id" class="form-control" style="font-size: 0.85rem;">
+                                        <option value="">-- None --</option>
+                                        {{range .ClientOptions}}
+                                        <option value="{{.ID}}" {{if .Selected}}selected{{end}}>{{.Name}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                {{end}}
+                                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                            </form>
+                            {{end}}
                         </div>
                     </aside>
                 </div>

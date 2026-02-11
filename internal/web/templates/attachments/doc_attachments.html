@@ -37,15 +37,20 @@
                 {{if .Membership.IsEditor}}
                 <div class="card">
                     <h3>Upload Attachment</h3>
-                    <form action="/attachments/upload" method="POST" enctype="multipart/form-data">
-                                {{.CSRFField}}
-                        <input type="hidden" name="document_id" value="{{$doc.ID}}">
-                        <div class="form-group">
-                            <label for="file">Choose file</label>
-                            <input type="file" id="file" name="file" required class="form-control" style="max-width:400px;">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Upload</button>
-                    </form>
+                    <div id="drop-zone" class="drop-zone">
+                        <form id="upload-form" action="/attachments/upload" method="POST" enctype="multipart/form-data">
+                            {{.CSRFField}}
+                            <input type="hidden" name="document_id" value="{{$doc.ID}}">
+                            <div class="drop-zone-content">
+                                <div class="drop-zone-icon">📂</div>
+                                <p>Drag &amp; drop files here, or</p>
+                                <label for="file" class="btn btn-secondary" style="cursor:pointer;">Choose File</label>
+                                <input type="file" id="file" name="file" required class="form-control" style="display:none;" onchange="document.getElementById('file-name').textContent = this.files[0]?.name || ''; document.getElementById('upload-btn').style.display = this.files.length ? 'inline-block' : 'none';">
+                            </div>
+                            <div id="file-name" style="margin-top: 8px; font-weight: 500;"></div>
+                            <button id="upload-btn" type="submit" class="btn btn-primary" style="display:none; margin-top: 8px;">Upload</button>
+                        </form>
+                    </div>
                 </div>
                 {{end}}
 
@@ -66,7 +71,12 @@
                         <tbody>
                             {{range $attachments}}
                             <tr>
-                                <td><a href="/attachments/{{.ID}}">{{.Filename}}</a></td>
+                                <td>
+                                    <a href="/attachments/{{.ID}}">{{.Filename}}</a>
+                                    {{if isPreviewable .Filename .ContentType}}
+                                    <button type="button" class="btn btn-sm" style="font-size: 0.7rem; padding: 1px 6px; margin-left: 4px;" onclick="togglePreview(this, '{{.ID}}', '{{.ContentType}}')">Preview</button>
+                                    {{end}}
+                                </td>
                                 <td>{{.ContentType}}</td>
                                 <td>{{formatSize .SizeBytes}}</td>
                                 <td>{{.CreatedAt.Format "Jan 2, 2006 3:04 PM"}}</td>
@@ -78,6 +88,11 @@
                                         <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Unlink this attachment?')">Unlink</button>
                                     </form>
                                     {{end}}
+                                </td>
+                            </tr>
+                            <tr class="preview-row" id="preview-{{.ID}}" style="display:none;">
+                                <td colspan="5" style="padding: 12px; text-align: center; background: var(--bg-secondary, #f8f9fa);">
+                                    <div class="preview-container"></div>
                                 </td>
                             </tr>
                             {{end}}
@@ -97,6 +112,73 @@
         </main>
     </div>
 {{template "page_scripts" .}}
+<script>
+// Drag and drop upload
+(function() {
+    var zone = document.getElementById('drop-zone');
+    var fileInput = document.getElementById('file');
+    var form = document.getElementById('upload-form');
+    var fileName = document.getElementById('file-name');
+    var uploadBtn = document.getElementById('upload-btn');
+    if (!zone) return;
+
+    ['dragenter', 'dragover'].forEach(function(ev) {
+        zone.addEventListener(ev, function(e) {
+            e.preventDefault();
+            zone.classList.add('drop-zone-active');
+        });
+    });
+    ['dragleave', 'drop'].forEach(function(ev) {
+        zone.addEventListener(ev, function(e) {
+            e.preventDefault();
+            zone.classList.remove('drop-zone-active');
+        });
+    });
+    zone.addEventListener('drop', function(e) {
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileName.textContent = files[0].name;
+            uploadBtn.style.display = 'inline-block';
+            // Auto-submit on drop
+            form.submit();
+        }
+    });
+})();
+
+// Preview toggle
+function togglePreview(btn, attId, contentType) {
+    var row = document.getElementById('preview-' + attId);
+    if (!row) return;
+    if (row.style.display !== 'none') {
+        row.style.display = 'none';
+        btn.textContent = 'Preview';
+        return;
+    }
+    row.style.display = 'table-row';
+    btn.textContent = 'Hide';
+    var container = row.querySelector('.preview-container');
+    if (container.children.length > 0) return; // already loaded
+
+    var url = '/attachments/' + attId + '/preview';
+    if (contentType === 'application/pdf' || contentType.indexOf('pdf') !== -1) {
+        var embed = document.createElement('iframe');
+        embed.src = url;
+        embed.style.width = '100%';
+        embed.style.height = '500px';
+        embed.style.border = '1px solid #ddd';
+        embed.style.borderRadius = '4px';
+        container.appendChild(embed);
+    } else {
+        var img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '400px';
+        img.style.borderRadius = '4px';
+        container.appendChild(img);
+    }
+}
+</script>
 </body>
 </html>
 {{end}}

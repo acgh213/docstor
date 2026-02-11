@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -155,6 +157,11 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		r.Post("/docs/id/{id}/revert/{revID}", s.handleDocRevertByID)
 		r.Post("/docs/id/{id}/verify", s.handleRunbookVerify)
 		r.Post("/docs/id/{id}/interval", s.handleRunbookUpdateInterval)
+		r.Post("/docs/id/{id}/metadata", s.handleDocMetadataUpdate)
+
+		// Folder tree (HTMX partial)
+		r.Get("/tree", s.handleFolderTree)
+
 		// Document read by path (must be last)
 		r.Get("/docs/*", s.handleDocRead)
 
@@ -165,6 +172,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		// Attachments
 		r.Post("/attachments/upload", s.handleAttachmentUpload)
 		r.Get("/attachments/{id}", s.handleAttachmentDownload)
+		r.Get("/attachments/{id}/preview", s.handleAttachmentPreview)
 		r.Get("/api/attachments", s.handleAttachmentsAPI)
 
 		// Evidence Bundles
@@ -363,6 +371,16 @@ func (s *Server) loadTemplates() error {
 			iso := t.Format(time.RFC3339)
 			display := t.Format(format)
 			return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, display))
+		},
+		"isPreviewable": func(filename, contentType string) bool {
+			ext := strings.ToLower(filepath.Ext(filename))
+			switch ext {
+			case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg":
+				return true
+			case ".pdf":
+				return true
+			}
+			return contentType == "application/pdf" || strings.HasPrefix(contentType, "image/")
 		},
 	}
 

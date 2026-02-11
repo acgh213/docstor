@@ -76,6 +76,14 @@ type DocPageData struct {
 	RunbookStatus  *runbooks.Status
 	RunbookOverdue bool
 	DefaultDocType string
+	Users          []UserOption
+	ClientOptions  []ClientOption
+}
+
+type UserOption struct {
+	ID       uuid.UUID
+	Name     string
+	Selected bool
 }
 
 type ClientOption struct {
@@ -159,6 +167,36 @@ func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
 		RenderedBody: renderedBody,
 	}
 	pageData.Title = doc.Title + " - Docstor"
+
+	// Load users and clients for metadata editor (editors only)
+	mem := auth.MembershipFromContext(ctx)
+	if mem != nil && mem.IsEditor() {
+		// Users
+		uRows, err := s.db.Query(ctx, `
+			SELECT u.id, u.name FROM memberships m
+			JOIN users u ON u.id = m.user_id
+			WHERE m.tenant_id = $1 ORDER BY u.name`, tenant.ID)
+		if err == nil {
+			defer uRows.Close()
+			for uRows.Next() {
+				var uo UserOption
+				if err := uRows.Scan(&uo.ID, &uo.Name); err == nil {
+					uo.Selected = doc.OwnerUserID != nil && *doc.OwnerUserID == uo.ID
+					pageData.Users = append(pageData.Users, uo)
+				}
+			}
+		}
+		// Clients
+		clientsList, err := s.clients.List(ctx, tenant.ID)
+		if err == nil {
+			for _, c := range clientsList {
+				pageData.ClientOptions = append(pageData.ClientOptions, ClientOption{
+					ID: c.ID, Name: c.Name, Code: c.Code,
+					Selected: doc.ClientID != nil && *doc.ClientID == c.ID,
+				})
+			}
+		}
+	}
 
 	// Load runbook status if this is a runbook
 	if doc.DocType == docs.DocTypeRunbook {

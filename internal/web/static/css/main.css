@@ -2105,3 +2105,91 @@ tr:hover td {
 .btn-danger:hover {
     background: #c82333;
 }
+
+/* ============================================
+   Polish: Drag & Drop Upload Zone
+   ============================================ */
+.drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.drop-zone-active {
+    border-color: var(--primary, #2563eb);
+    background-color: rgba(37, 99, 235, 0.05);
+}
+.drop-zone-content p {
+    margin: 0.5rem 0;
+    color: #666;
+}
+.drop-zone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+/* ============================================
+   Polish: Folder Tree
+   ============================================ */
+.folder-tree-panel {
+    margin-bottom: 1rem;
+}
+.tree-folder {
+    margin-left: 0.5rem;
+}
+.tree-folder-header {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    user-select: none;
+    font-size: 0.9rem;
+}
+.tree-folder-header:hover {
+    background-color: rgba(0,0,0,0.04);
+}
+.tree-arrow {
+    display: inline-block;
+    transition: transform 0.15s;
+    font-size: 0.7rem;
+    width: 1em;
+}
+.tree-folder.open > .tree-folder-header .tree-arrow {
+    transform: rotate(90deg);
+}
+.tree-children {
+    margin-left: 1rem;
+    display: none;
+}
+.tree-folder.open > .tree-children {
+    display: block;
+}
+.tree-doc {
+    padding: 3px 8px;
+    margin-left: 0.5rem;
+    font-size: 0.85rem;
+}
+.tree-doc a {
+    text-decoration: none;
+    color: inherit;
+}
+.tree-doc a:hover {
+    color: var(--primary, #2563eb);
+}
+.tree-empty {
+    padding: 4px 8px;
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+    color: #999;
+    font-style: italic;
+}
+
+/* ============================================
+   Polish: Preview rows in attachment table
+   ============================================ */
+.preview-row td {
+    background: #f8f9fa;
+}
+.preview-container img {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

@@ -76,6 +76,7 @@ const (
 	ActionDocDelete      = "doc.delete"
 	ActionDocMove        = "doc.move"
 	ActionDocRevert      = "doc.revert"
+	ActionDocMetadata    = "doc.metadata"
 	ActionRunbookVerify  = "runbook.verify"
 	ActionClientCreate   = "client.create"
 	ActionClientUpdate   = "client.update"

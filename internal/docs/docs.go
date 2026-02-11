@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -546,6 +547,119 @@ func (r *Repository) Rename(ctx context.Context, tenantID, docID uuid.UUID, newP
 }
 
 // Delete removes a document and its revisions (via CASCADE).
+// MetadataUpdate holds optional metadata fields to update on a document.
+type MetadataUpdate struct {
+	DocType     *DocType
+	Sensitivity *Sensitivity
+	OwnerUserID *uuid.UUID // set to &uuid.Nil to clear
+	ClientID    *uuid.UUID // set to &uuid.Nil to clear
+}
+
+// UpdateMetadata updates document metadata fields without creating a new revision.
+func (r *Repository) UpdateMetadata(ctx context.Context, tenantID, docID uuid.UUID, m MetadataUpdate) error {
+	sets := []string{"updated_at = NOW()"}
+	args := []any{tenantID, docID}
+	i := 3
+
+	if m.DocType != nil {
+		sets = append(sets, fmt.Sprintf("doc_type = $%d", i))
+		args = append(args, string(*m.DocType))
+		i++
+	}
+	if m.Sensitivity != nil {
+		sets = append(sets, fmt.Sprintf("sensitivity = $%d", i))
+		args = append(args, string(*m.Sensitivity))
+		i++
+	}
+	if m.OwnerUserID != nil {
+		if *m.OwnerUserID == uuid.Nil {
+			sets = append(sets, fmt.Sprintf("owner_user_id = $%d", i))
+			args = append(args, nil)
+		} else {
+			sets = append(sets, fmt.Sprintf("owner_user_id = $%d", i))
+			args = append(args, *m.OwnerUserID)
+		}
+		i++
+	}
+	if m.ClientID != nil {
+		if *m.ClientID == uuid.Nil {
+			sets = append(sets, fmt.Sprintf("client_id = $%d", i))
+			args = append(args, nil)
+		} else {
+			sets = append(sets, fmt.Sprintf("client_id = $%d", i))
+			args = append(args, *m.ClientID)
+		}
+		i++
+	}
+
+	query := fmt.Sprintf("UPDATE documents SET %s WHERE tenant_id = $1 AND id = $2",
+		strings.Join(sets, ", "))
+	result, err := r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("update metadata: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// ListFolders returns distinct folder prefixes from document paths.
+func (r *Repository) ListFolders(ctx context.Context, tenantID uuid.UUID, prefix string) ([]string, []Document, error) {
+	// Get all docs with this prefix
+	var allDocs []Document
+	query := `SELECT id, tenant_id, client_id, path, title, doc_type, sensitivity,
+		owner_user_id, current_revision_id, created_by, created_at, updated_at
+		FROM documents WHERE tenant_id = $1`
+	args := []any{tenantID}
+
+	if prefix != "" {
+		query += " AND path LIKE $2"
+		args = append(args, prefix+"%")
+	}
+	query += " ORDER BY path"
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list folders: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var d Document
+		if err := rows.Scan(&d.ID, &d.TenantID, &d.ClientID, &d.Path, &d.Title,
+			&d.DocType, &d.Sensitivity, &d.OwnerUserID, &d.CurrentRevisionID,
+			&d.CreatedBy, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, nil, fmt.Errorf("scan: %w", err)
+		}
+		allDocs = append(allDocs, d)
+	}
+
+	// Extract folders and direct children
+	folderSet := make(map[string]bool)
+	var directDocs []Document
+	prefixLen := len(prefix)
+
+	for _, d := range allDocs {
+		rest := d.Path[prefixLen:]
+		if idx := strings.Index(rest, "/"); idx >= 0 {
+			// Has subfolder
+			folderSet[prefix+rest[:idx+1]] = true
+		} else {
+			// Direct child document
+			directDocs = append(directDocs, d)
+		}
+	}
+
+	var folders []string
+	for f := range folderSet {
+		folders = append(folders, f)
+	}
+	sort.Strings(folders)
+
+	return folders, directDocs, nil
+}
+
 func (r *Repository) Delete(ctx context.Context, tenantID, docID uuid.UUID) error {
 	result, err := r.db.Exec(ctx, `DELETE FROM documents WHERE tenant_id = $1 AND id = $2`,
 		tenantID, docID)
