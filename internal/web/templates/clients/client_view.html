@@ -10,6 +10,9 @@
     <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
 </head>
 <body>
+    {{$client := index .Content "Client"}}
+    {{$sites := index .Content "Sites"}}
+    {{$docs := index .Content "Docs"}}
     <div class="app-container">
         {{template "sidebar" .}}
         <main class="main-content">
@@ -20,39 +23,101 @@
                 <nav class="breadcrumbs">
                     <a href="/clients">Clients</a>
                     <span class="separator">/</span>
-                    {{if .Content}}{{.Content.Name}}{{else}}Client{{end}}
+                    {{$client.Name}}
                 </nav>
 
                 <div class="page-header">
                     <div class="page-header-row">
-                        <h2>{{if .Content}}{{.Content.Name}}{{else}}Client{{end}}</h2>
+                        <h2>{{$client.Name}}</h2>
                         {{if .Membership.IsEditor}}
-                        <a href="/clients/{{if .Content}}{{.Content.ID}}{{end}}/edit" class="btn btn-secondary">Edit</a>
+                        <a href="/clients/{{$client.ID}}/edit" class="btn btn-secondary">Edit</a>
                         {{end}}
                     </div>
                 </div>
 
-                {{if .Content}}
                 <div class="card">
                     <dl class="detail-list">
                         <dt>Code</dt>
-                        <dd><code>{{.Content.Code}}</code></dd>
+                        <dd><code>{{$client.Code}}</code></dd>
                         <dt>Notes</dt>
-                        <dd>{{if .Content.Notes}}{{.Content.Notes}}{{else}}<span class="text-muted">No notes</span>{{end}}</dd>
+                        <dd>{{if $client.Notes}}{{$client.Notes}}{{else}}<span class="text-muted">No notes</span>{{end}}</dd>
                         <dt>Created</dt>
-                        <dd>{{.Content.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
+                        <dd>{{$client.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}</dd>
                     </dl>
                 </div>
 
                 <div class="card">
-                    <h3>Documents</h3>
-                    <p class="text-muted">No documents associated with this client yet.</p>
+                    <div class="page-header-row" style="margin-bottom: 0.75rem;">
+                        <h3 style="margin: 0;">🏢 Sites</h3>
+                        {{if .Membership.IsEditor}}
+                        <a href="/sites/new?client_id={{$client.ID}}" class="btn btn-secondary btn-sm">Add Site</a>
+                        {{end}}
+                    </div>
+                    {{if $sites}}
+                    <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $sites}}
+                            <tr>
+                                <td><a href="/sites/{{.ID}}">{{.Name}}</a></td>
+                                <td>{{if .Address}}{{.Address}}{{else}}<span class="text-muted">-</span>{{end}}</td>
+                                <td><a href="/sites/{{.ID}}" class="btn btn-secondary btn-sm">View</a></td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    </div>
+                    {{else}}
+                    <p class="text-muted">No sites yet. {{if .Membership.IsEditor}}<a href="/sites/new?client_id={{$client.ID}}">Add one</a>.{{end}}</p>
+                    {{end}}
                 </div>
-                {{else}}
+
                 <div class="card">
-                    <p class="text-muted">Client not found.</p>
+                    <h3>📄 Documents</h3>
+                    {{if $docs}}
+                    <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Path</th>
+                                <th>Type</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $docs}}
+                            <tr>
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td><code>{{.Path}}</code></td>
+                                <td>{{if eq .DocType "runbook"}}<span class="badge badge-warning">Runbook</span>{{else}}<span class="badge">Doc</span>{{end}}</td>
+                                <td>{{timeTag .UpdatedAt "Jan 2, 2006"}}</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    </div>
+                    {{else}}
+                    <p class="text-muted">No documents associated with this client yet.</p>
+                    {{end}}
                 </div>
-                {{end}}
+
+                <div class="card">
+                    <h3>🔗 Quick Links</h3>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                        <a href="/systems?client_id={{$client.ID}}" class="btn btn-secondary btn-sm">🖥 Systems</a>
+                        <a href="/vendors?client_id={{$client.ID}}" class="btn btn-secondary btn-sm">🏢 Vendors</a>
+                        <a href="/contacts?client_id={{$client.ID}}" class="btn btn-secondary btn-sm">👤 Contacts</a>
+                        <a href="/circuits?client_id={{$client.ID}}" class="btn btn-secondary btn-sm">🔌 Circuits</a>
+                    </div>
+                </div>
 
             </div>
         </main>

@@ -27,6 +27,7 @@ import (
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
+	"github.com/exedev/docstor/internal/sites"
 	tmplpkg "github.com/exedev/docstor/internal/templates"
 )
 
@@ -52,6 +53,7 @@ type Server struct {
 	checklists      *checklists.Repository
 	cmdb            *cmdb.Repository
 	incidents       *incidents.Repository
+	sites           *sites.Repository
 	loginLimiter    *auth.RateLimiter
 }
 
@@ -78,6 +80,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	checklistsRepo := checklists.NewRepository(db)
 	cmdbRepo := cmdb.NewRepository(db)
 	incidentsRepo := incidents.NewRepository(db)
+	sitesRepo := sites.NewRepository(db)
 
 	s := &Server{
 		db:           db,
@@ -94,6 +97,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		checklists:      checklistsRepo,
 		cmdb:            cmdbRepo,
 		incidents:       incidentsRepo,
+		sites:           sitesRepo,
 		loginLimiter:    auth.NewRateLimiter(5, time.Minute),
 	}
 
@@ -273,6 +277,17 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 			r.Post("/{id}/delete", s.handleCircuitDelete)
 		})
 
+		// Sites
+		r.Route("/sites", func(r chi.Router) {
+			r.Get("/", s.handleSitesList)
+			r.Get("/new", s.handleSiteNew)
+			r.Post("/", s.handleSiteCreate)
+			r.Get("/{id}", s.handleSiteView)
+			r.Get("/{id}/edit", s.handleSiteEdit)
+			r.Post("/{id}", s.handleSiteUpdate)
+			r.Post("/{id}/delete", s.handleSiteDelete)
+		})
+
 		// Known Issues
 		r.Route("/known-issues", func(r chi.Router) {
 			r.Get("/", s.handleKnownIssuesList)
@@ -396,6 +411,7 @@ func (s *Server) loadTemplates() error {
 		"templates/templates/*.html",
 		"templates/checklists/*.html",
 		"templates/cmdb/*.html",
+		"templates/sites/*.html",
 		"templates/incidents/*.html",
 		"templates/landing.html",
 	)

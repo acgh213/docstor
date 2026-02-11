@@ -119,6 +119,10 @@ const (
 	ActionIncidentUpdate   = "incident.update"
 	ActionIncidentDelete   = "incident.delete"
 	ActionIncidentEvent    = "incident.event"
+
+	ActionSiteCreate = "site.create"
+	ActionSiteUpdate = "site.update"
+	ActionSiteDelete = "site.delete"
 )
 
 // Common target types
@@ -139,4 +143,5 @@ const (
 	TargetKnownIssue   = "known_issue"
 	TargetIncident     = "incident"
 	TargetIncidentEvent = "incident_event"
+	TargetSite          = "site"
 )

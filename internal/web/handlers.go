@@ -442,9 +442,19 @@ func (s *Server) handleClientView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Load sites for this client
+	clientSites, _ := s.sites.ListByClient(ctx, tenant.ID, clientID)
+
+	// Load docs for this client
+	clientDocs, _ := s.docs.List(ctx, tenant.ID, &clientID, nil)
+
 	data := s.newPageData(r)
 	data.Title = client.Name + " - Docstor"
-	data.Content = client
+	data.Content = map[string]any{
+		"Client": client,
+		"Sites":  clientSites,
+		"Docs":   clientDocs,
+	}
 	s.render(w, r, "client_view.html", data)
 }
 

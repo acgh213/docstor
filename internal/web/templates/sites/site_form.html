@@ -1,0 +1,79 @@
+{{define "site_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    {{$form := .Content}}
+    {{$site := $form.Site}}
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/sites">Sites</a>
+                    <span class="separator">/</span>
+                    {{if $site}}{{if $site.ID}}Edit{{else}}New Site{{end}}{{else}}New Site{{end}}
+                </nav>
+
+                <div class="page-header">
+                    <h2>{{if $site}}{{if $site.ID}}Edit Site{{else}}New Site{{end}}{{else}}New Site{{end}}</h2>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="{{if $site}}{{if $site.ID}}/sites/{{$site.ID}}{{else}}/sites{{end}}{{else}}/sites{{end}}" class="form">
+                        {{.CSRFField}}
+
+                        <div class="form-group">
+                            <label for="name">Name *</label>
+                            <input type="text" id="name" name="name" required class="form-control"
+                                   value="{{if $site}}{{$site.Name}}{{end}}"
+                                   placeholder="e.g. Main Office, Data Center 1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="client_id">Client *</label>
+                            <select id="client_id" name="client_id" required class="form-control">
+                                <option value="">-- Select Client --</option>
+                                {{range $form.Clients}}
+                                <option value="{{.ID}}" {{if $site}}{{if eq .ID $site.ClientID}}selected{{end}}{{end}}>{{.Name}} ({{.Code}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" name="address" class="form-control"
+                                   value="{{if $site}}{{$site.Address}}{{end}}"
+                                   placeholder="e.g. 123 Main St, Suite 100, City, State 12345">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes" rows="4" class="form-control"
+                                      placeholder="Access codes, hours, contact info...">{{if $site}}{{$site.Notes}}{{end}}</textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                {{if $site}}{{if $site.ID}}Save Changes{{else}}Create Site{{end}}{{else}}Create Site{{end}}
+                            </button>
+                            <a href="/sites" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}
