@@ -17,7 +17,7 @@
             <div class="content">
                 {{template "alerts" .}}
 
-                <div class="page-header">
+                <div class="page-header page-header-row">
                     <h2>Dashboard</h2>
                     {{if .Membership.IsEditor}}
                     <a href="/docs/new" class="btn btn-primary">New Document</a>
@@ -25,32 +25,35 @@
                 </div>
 
                 {{with .Content}}
-                <div class="dashboard-stats" style="grid-template-columns: repeat(5, 1fr);">
-                    <div class="stat-card">
+
+                {{/* ── Documentation stats row ── */}}
+                <div class="dashboard-stats">
+                    <a href="/docs" class="stat-card stat-card-link">
                         <div class="stat-number">{{.TotalDocs}}</div>
-                        <div class="stat-label">Total Documents</div>
-                    </div>
-                    <div class="stat-card">
+                        <div class="stat-label">Documents</div>
+                    </a>
+                    <a href="/runbooks" class="stat-card stat-card-link">
                         <div class="stat-number">{{.TotalRunbooks}}</div>
                         <div class="stat-label">Runbooks</div>
-                    </div>
-                    <div class="stat-card {{if gt .OverdueCount 0}}stat-card-warning{{end}}">
+                    </a>
+                    <a href="/runbooks" class="stat-card stat-card-link {{if gt .OverdueCount 0}}stat-card-warning{{end}}">
                         <div class="stat-number">{{.OverdueCount}}</div>
-                        <div class="stat-label">Overdue Runbooks</div>
-                    </div>
-                    <div class="stat-card {{if gt .StaleCount 0}}stat-card-warning{{end}}">
+                        <div class="stat-label">Overdue</div>
+                    </a>
+                    <a href="/docs/health" class="stat-card stat-card-link {{if gt .StaleCount 0}}stat-card-warning{{end}}">
                         <div class="stat-number">{{.StaleCount}}</div>
-                        <div class="stat-label">Stale Docs</div>
-                    </div>
-                    <div class="stat-card {{if gt .UnownedCount 0}}stat-card-warning{{end}}">
+                        <div class="stat-label">Stale</div>
+                    </a>
+                    <a href="/docs/health" class="stat-card stat-card-link {{if gt .UnownedCount 0}}stat-card-warning{{end}}">
                         <div class="stat-number">{{.UnownedCount}}</div>
-                        <div class="stat-label">Unowned Docs</div>
-                    </div>
+                        <div class="stat-label">Unowned</div>
+                    </a>
                 </div>
 
+                {{/* ── Overdue runbooks ── */}}
                 {{if .OverdueRunbooks}}
                 <section class="card dashboard-section">
-                    <h3>&#x26A0;&#xFE0F; Overdue Runbooks</h3>
+                    <h3>Overdue Runbooks</h3>
                     <table class="table">
                         <thead>
                             <tr>
@@ -75,9 +78,10 @@
                 </section>
                 {{end}}
 
+                {{/* ── Recently updated ── */}}
                 {{if .RecentDocs}}
                 <section class="card dashboard-section">
-                    <h3>&#x1F4DD; Recently Updated</h3>
+                    <h3>Recently Updated</h3>
                     <table class="table">
                         <thead>
                             <tr>
@@ -104,30 +108,76 @@
                 </section>
                 {{end}}
 
-                {{if or (gt .StaleCount 0) (gt .UnownedCount 0)}}
-                <section class="card dashboard-section">
-                    <h3>&#x1F4CA; Doc Health</h3>
-                    <p class="text-muted" style="margin-top: 0; margin-bottom: 12px;">
-                        {{if gt .StaleCount 0}}<span class="badge badge-warning">{{.StaleCount}} stale</span> {{end}}
-                        {{if gt .UnownedCount 0}}<span class="badge badge-warning">{{.UnownedCount}} unowned</span> {{end}}
-                        &mdash; documents need attention.
-                    </p>
-                    <a href="/docs/health" class="btn btn-secondary btn-sm">View Doc Health Dashboard &rarr;</a>
-                </section>
-                {{end}}
+                {{/* ── Section overview cards ── */}}
+                <div class="dashboard-grid">
+                    <section class="card dashboard-section">
+                        <h3>Clients &amp; Sites</h3>
+                        <div class="section-counts">
+                            <a href="/clients" class="section-count-item">
+                                <span class="section-count-num">{{.ClientCount}}</span>
+                                <span class="section-count-label">Clients</span>
+                            </a>
+                            <a href="/sites" class="section-count-item">
+                                <span class="section-count-num">{{.SiteCount}}</span>
+                                <span class="section-count-label">Sites</span>
+                            </a>
+                        </div>
+                    </section>
+
+                    <section class="card dashboard-section">
+                        <h3>CMDB</h3>
+                        <div class="section-counts">
+                            <a href="/systems" class="section-count-item">
+                                <span class="section-count-num">{{.SystemCount}}</span>
+                                <span class="section-count-label">Systems</span>
+                            </a>
+                            <a href="/vendors" class="section-count-item">
+                                <span class="section-count-num">{{.VendorCount}}</span>
+                                <span class="section-count-label">Vendors</span>
+                            </a>
+                            <a href="/contacts" class="section-count-item">
+                                <span class="section-count-num">{{.ContactCount}}</span>
+                                <span class="section-count-label">Contacts</span>
+                            </a>
+                            <a href="/circuits" class="section-count-item">
+                                <span class="section-count-num">{{.CircuitCount}}</span>
+                                <span class="section-count-label">Circuits</span>
+                            </a>
+                        </div>
+                    </section>
+
+                    <section class="card dashboard-section">
+                        <h3>Operations</h3>
+                        <div class="section-counts">
+                            <a href="/known-issues" class="section-count-item {{if gt .OpenIssueCount 0}}section-count-warn{{end}}">
+                                <span class="section-count-num">{{.OpenIssueCount}}</span>
+                                <span class="section-count-label">Open Issues</span>
+                            </a>
+                            <a href="/incidents" class="section-count-item {{if gt .OpenIncidentCount 0}}section-count-warn{{end}}">
+                                <span class="section-count-num">{{.OpenIncidentCount}}</span>
+                                <span class="section-count-label">Active Incidents</span>
+                            </a>
+                            <a href="/checklist-instances" class="section-count-item">
+                                <span class="section-count-num">{{.ChecklistCount}}</span>
+                                <span class="section-count-label">In-Progress Checklists</span>
+                            </a>
+                        </div>
+                    </section>
+
+                    {{if or (gt .StaleCount 0) (gt .UnownedCount 0)}}
+                    <section class="card dashboard-section">
+                        <h3>Doc Health</h3>
+                        <p class="text-muted" style="margin-top: 0; margin-bottom: 12px;">
+                            {{if gt .StaleCount 0}}<span class="badge badge-warning">{{.StaleCount}} stale</span> {{end}}
+                            {{if gt .UnownedCount 0}}<span class="badge badge-warning">{{.UnownedCount}} unowned</span> {{end}}
+                            &mdash; documents need attention.
+                        </p>
+                        <a href="/docs/health" class="btn btn-secondary btn-sm">View Doc Health &rarr;</a>
+                    </section>
+                    {{end}}
+                </div>
 
                 {{end}}
-
-                <section class="card dashboard-section">
-                    <h3>&#x1F517; Quick Links</h3>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
-                        <a href="/docs" class="btn btn-secondary">All Documents</a>
-                        <a href="/runbooks" class="btn btn-secondary">Runbooks</a>
-                        <a href="/clients" class="btn btn-secondary">Clients</a>
-                        <a href="/evidence-bundles" class="btn btn-secondary">Evidence Bundles</a>
-                        <a href="/docs/health" class="btn btn-secondary">Doc Health</a>
-                    </div>
-                </section>
             </div>
         </main>
     </div>

@@ -262,6 +262,17 @@ type DashboardData struct {
 	UnownedCount    int
 	RecentDocs      []docs.Document
 	OverdueRunbooks []runbooks.RunbookWithStatus
+
+	// Section counts for dashboard cards
+	ClientCount      int
+	SiteCount        int
+	SystemCount      int
+	VendorCount      int
+	ContactCount     int
+	CircuitCount     int
+	OpenIssueCount   int
+	OpenIncidentCount int
+	ChecklistCount   int
 }
 
 // Dashboard handlers
@@ -311,6 +322,42 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	} else {
 		dd.StaleCount = len(healthSummary.StaleDocs)
 		dd.UnownedCount = len(healthSummary.UnownedDocs)
+	}
+
+	// Section counts (best-effort, non-blocking)
+	if cls, err := s.clients.List(ctx, tenant.ID); err == nil {
+		dd.ClientCount = len(cls)
+	}
+	if sts, err := s.sites.List(ctx, tenant.ID, nil); err == nil {
+		dd.SiteCount = len(sts)
+	}
+	if sys, err := s.cmdb.ListSystems(ctx, tenant.ID, nil); err == nil {
+		dd.SystemCount = len(sys)
+	}
+	if vnd, err := s.cmdb.ListVendors(ctx, tenant.ID, nil); err == nil {
+		dd.VendorCount = len(vnd)
+	}
+	if con, err := s.cmdb.ListContacts(ctx, tenant.ID, nil); err == nil {
+		dd.ContactCount = len(con)
+	}
+	if cir, err := s.cmdb.ListCircuits(ctx, tenant.ID, nil); err == nil {
+		dd.CircuitCount = len(cir)
+	}
+	if iss, err := s.incidents.ListKnownIssues(ctx, tenant.ID, "open", nil); err == nil {
+		dd.OpenIssueCount = len(iss)
+	}
+	if inc, err := s.incidents.ListIncidents(ctx, tenant.ID, "", nil); err == nil {
+		// count non-resolved incidents
+		open := 0
+		for _, i := range inc {
+			if i.Status != "resolved" {
+				open++
+			}
+		}
+		dd.OpenIncidentCount = open
+	}
+	if chk, err := s.checklists.ListInstances(ctx, tenant.ID, "in_progress"); err == nil {
+		dd.ChecklistCount = len(chk)
 	}
 
 	data := s.newPageData(r)

@@ -8,23 +8,36 @@
     </div>
     <nav class="sidebar-nav">
         <a href="/" class="nav-item" data-nav="dashboard">Dashboard</a>
+
+        <div class="nav-section-label">Documentation</div>
         <a href="/docs" class="nav-item" data-nav="docs">Docs</a>
         <a href="/runbooks" class="nav-item" data-nav="runbooks">Runbooks</a>
-        <a href="/clients" class="nav-item" data-nav="clients">Clients</a>
         <a href="/templates" class="nav-item" data-nav="templates">Templates</a>
-        <a href="/checklists" class="nav-item" data-nav="checklists">Checklists</a>
-        <a href="/sites" class="nav-item" data-nav="sites">🏢 Sites</a>
-        <a href="/systems" class="nav-item" data-nav="systems">🖥 Systems</a>
-        <a href="/vendors" class="nav-item" data-nav="vendors">🏢 Vendors</a>
-        <a href="/contacts" class="nav-item" data-nav="contacts">👤 Contacts</a>
-        <a href="/circuits" class="nav-item" data-nav="circuits">🔌 Circuits</a>
-        <a href="/known-issues" class="nav-item" data-nav="known-issues">⚠️ Known Issues</a>
-        <a href="/incidents" class="nav-item" data-nav="incidents">🚨 Incidents</a>
-        <a href="/evidence-bundles" class="nav-item" data-nav="evidence-bundles">Evidence Bundles</a>
         <a href="/search" class="nav-item" data-nav="search">Search</a>
-        <a href="/docs/health" class="nav-item" data-nav="doc-health">📊 Doc Health</a>
+
+        <div class="nav-section-label">Clients &amp; Sites</div>
+        <a href="/clients" class="nav-item" data-nav="clients">Clients</a>
+        <a href="/sites" class="nav-item" data-nav="sites">Sites</a>
+
+        <div class="nav-section-label">CMDB</div>
+        <a href="/systems" class="nav-item" data-nav="systems">Systems</a>
+        <a href="/vendors" class="nav-item" data-nav="vendors">Vendors</a>
+        <a href="/contacts" class="nav-item" data-nav="contacts">Contacts</a>
+        <a href="/circuits" class="nav-item" data-nav="circuits">Circuits</a>
+
+        <div class="nav-section-label">Operations</div>
+        <a href="/known-issues" class="nav-item" data-nav="known-issues">Known Issues</a>
+        <a href="/incidents" class="nav-item" data-nav="incidents">Incidents</a>
+        <a href="/checklists" class="nav-item" data-nav="checklists">Checklists</a>
+        <a href="/evidence-bundles" class="nav-item" data-nav="evidence-bundles">Evidence Bundles</a>
+
+        <div class="nav-section-label">Health</div>
+        <a href="/docs/health" class="nav-item" data-nav="doc-health">Doc Health</a>
+
         {{if .Membership.IsAdmin}}
-        <a href="/admin/users" class="nav-item" data-nav="admin">⚙️ Admin</a>
+        <div class="nav-section-label">Admin</div>
+        <a href="/admin/users" class="nav-item" data-nav="admin">Users &amp; Settings</a>
+        <a href="/admin/audit" class="nav-item" data-nav="audit">Audit Log</a>
         {{end}}
     </nav>
 </aside>
