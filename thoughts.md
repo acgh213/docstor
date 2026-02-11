@@ -97,6 +97,23 @@ Last updated: February 11, 2026
 - 6 templates (list/form/view for known issues + incidents)
 - Migration 006
 
+### Polish ✅ — UX Refinements
+- Drag-and-drop file upload zone on attachments page (auto-submit on drop)
+- HTMX folder tree navigation on docs list (`GET /tree?folder=...`)
+- Image/PDF inline preview on attachments page (`GET /attachments/{id}/preview`)
+- Quick-edit doc metadata from view page (type, sensitivity, owner, client via inline HTMX form)
+- `docs.UpdateMetadata()` and `docs.ListFolders()` repo methods
+- `isPreviewable` template function
+
+### Phase 13 ✅ — Sites
+- `sites` table with client_id FK, indexes
+- site_id added to systems, contacts, circuits tables
+- Full CRUD handlers + 3 templates (list/form/view)
+- Client view updated: shows sites table, docs table, CMDB quick links
+- Sidebar nav: Sites between Checklists and Systems
+- Audit logging for site create/update/delete
+- Migration 007
+
 ### Security Hardening ✅
 - **CSRF protection**: nosurf middleware with form tokens + HTMX header injection
 - **Login rate limiting**: 5 attempts/60s per IP, in-memory with auto-cleanup
@@ -113,16 +130,13 @@ Last updated: February 11, 2026
 
 ## Remaining Work
 
-### Polish
-- [ ] Drag-and-drop file upload on attachments/edit pages
-- [ ] HTMX folder tree navigation (`GET /tree?folder=...`)
-- [ ] Image/PDF preview before download
-- [ ] Quick-edit doc metadata from view page (inline HTMX)
+### Optional: Hardening Phase
+- [ ] S3-compatible storage backend
+- [ ] PDF packet export
+- [ ] Break-glass access for confidential docs
+- [ ] Tamper-evident audit (hash chain)
 
-### Phase 13 — Sites (deferred per claude.md §4)
-- [ ] Sites table + client→sites relationship
-- [ ] Optional site scoping for CMDB objects
-- [ ] Migration 007
+All feature phases (0–13) and polish items are complete.
 
 ---
 

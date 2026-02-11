@@ -10,27 +10,22 @@
 | 10 | CMDB-lite + Live Blocks (systems/vendors/contacts/circuits) | ✅ |
 | 11 | Known Issues + Incidents | ✅ |
 | 12 | Doc Health Dashboard (stale, unowned, health %) | ✅ |
+| 13 | Sites (client → sites) | ✅ |
 | Security | CSRF, rate limiting, sensitivity gating | ✅ |
 | UX A-D | Mobile, flash, breadcrumbs, editor polish | ✅ |
+| Polish | Drag-drop upload, folder tree, image preview, metadata edit | ✅ |
 | Tests | Tenant isolation, role gating, XSS, conflict, audit (33 tests) | ✅ |
 | Admin | User management, audit viewer, tenant settings | ✅ |
 | Landing | Public landing page + improved dashboard | ✅ |
 | Doc Ops | Rename/move/delete documents | ✅ |
 
-**Migrations**: 001-006 all applied. DB at version 6.
+**Migrations**: 001-007 all applied. DB at version 7.
 
 ---
 
-## Remaining: Polish
+## Optional: Hardening Phase
 
-- [ ] Drag-and-drop file upload on attachments/edit pages
-- [ ] HTMX folder tree navigation (`GET /tree?folder=...`)
-- [ ] Image/PDF preview before download
-- [ ] Quick-edit doc metadata from view page (inline HTMX)
-
-## Remaining: Phase 13 — Sites
-
-- [ ] Sites table (client → sites relationship)
-- [ ] Optional site scoping for CMDB objects
-- [ ] Site filtering in directory views
-- [ ] Migration 007
+- [ ] S3-compatible storage backend
+- [ ] PDF packet export
+- [ ] Break-glass access for confidential docs
+- [ ] Tamper-evident audit (hash chain)

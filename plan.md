@@ -18,13 +18,14 @@
 | 9 | Templates + Checklists | Templates CRUD, use-template, checklists, instances, HTMX toggle |
 | 10 | CMDB-lite + Live Blocks | Systems, vendors, contacts, circuits CRUD + shortcode rendering |
 | 11 | Known Issues + Incidents | Known issues board, incident timeline, events |
+| Polish | Drag-drop upload, folder tree, image preview, metadata edit | All 4 items |
+| 13 | Sites | Client→sites relationship, site CRUD, client view integration |
 
 ### 🚧 Remaining
 
 | Phase | What | Est. | Schema needed |
 |-------|------|------|---------------|
-| Polish | Drag-drop upload, folder tree, image preview, metadata edit | 2–3h | None |
-| 13 | Sites (client → sites) | 2–3h | sites |
+| Hardening | S3 storage, PDF export, break-glass, hash-chain audit | Variable | Optional |
 
 ### Phase 9 — Templates + Checklists
 
@@ -57,12 +58,12 @@ Delivered: Full CRUD for systems/vendors/contacts/circuits. Shortcode rendering 
 
 Delivered: Known issues board with status/severity filters. Incident timeline with events. 6 templates, migration 006.
 
-### Polish Items
+### Polish Items ✅ COMPLETE
 
-- [ ] Drag-and-drop file upload on edit/attachments pages
-- [ ] HTMX folder tree navigation (`GET /tree?folder=...`)
-- [ ] Image/PDF preview before download
-- [ ] Quick-edit doc metadata from view page (inline HTMX)
+- [x] Drag-and-drop file upload on attachments page (auto-submit on drop)
+- [x] HTMX folder tree navigation (`GET /tree?folder=...`) on docs list
+- [x] Image/PDF inline preview on attachments page
+- [x] Quick-edit doc metadata from view page (type, sensitivity, owner, client via inline HTMX form)
 
 ---
 
@@ -785,11 +786,9 @@ Note: Change records (PR-112) deferred — not in MVP scope.
 
 Delivered: Stale docs, unowned docs, health percentage dashboard at `/docs/health`.
 
-### Phase 13 — Sites (deferred)
+### Phase 13 — Sites ✅ COMPLETE
 
-**PR-130: Sites schema + client->site relationship**
-**PR-131: Optional site scoping for directory objects**
-Acceptance: adds sites without breaking existing client/doc URLs.
+Delivered: Sites table with client->site FK. Optional site_id on systems/contacts/circuits. Full CRUD with client filtering. Client view shows sites, docs, and CMDB quick links. Migration 007.
 
 ---
 

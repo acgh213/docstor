@@ -42,13 +42,10 @@ Docstor is a web-first MSP documentation system built with Go. It's server-rende
 | Admin | User management, audit viewer, tenant settings | ✅ |
 | Landing | Public landing page + improved dashboard | ✅ |
 | Doc Ops | Rename/move/delete documents | ✅ |
+| Polish | Drag-drop upload, folder tree, image preview, metadata edit | ✅ |
+| 13 | Sites (client → sites relationship) | ✅ |
 
-### Remaining
-
-| Phase | Description | Est. |
-|-------|-------------|------|
-| Polish | Drag-drop upload, HTMX folder tree, image preview, metadata edit | 2-3h |
-| 13 | Sites (client → sites) | 2-3h |
+All feature phases complete. Remaining work is optional hardening (S3 storage, PDF export, break-glass, hash-chain audit).
 
 ## Project Structure
 
@@ -69,6 +66,7 @@ switch-dune/
 │   ├── docs/                        # Documents, revisions, markdown, diff, sensitivity
 │   ├── incidents/                   # Known issues + incidents + events
 │   ├── runbooks/                    # Runbook verification status
+│   ├── sites/                       # Sites (client->sites)
 │   ├── templates/                   # Doc/runbook templates
 │   ├── testutil/                    # Test helpers (DB setup, fixtures)
 │   └── web/                         # HTTP handlers, templates, static
@@ -80,6 +78,8 @@ switch-dune/
 │       ├── handlers_docs.go         # Doc CRUD, rename, delete
 │       ├── handlers_health.go       # Doc health dashboard
 │       ├── handlers_incidents.go    # Known issues & incidents
+│       ├── handlers_polish.go       # Folder tree, metadata edit, preview
+│       ├── handlers_sites.go        # Sites CRUD
 │       ├── handlers_runbooks.go     # Runbook verification
 │       ├── handlers_search.go       # Search
 │       ├── handlers_templates.go    # Doc templates
@@ -94,6 +94,7 @@ switch-dune/
 │       │   ├── checklists/          # checklists_list, form, view, instances
 │       │   ├── cmdb/                # systems, vendors, contacts, circuits (list/form/view each)
 │       │   ├── incidents/           # known_issues, incidents (list/form/view each)
+│       │   ├── sites/               # sites (list/form/view)
 │       │   ├── runbooks/            # runbooks_dashboard
 │       │   ├── search/              # search
 │       │   ├── templates/           # template library (list/form/view)
@@ -157,6 +158,9 @@ GET/POST /clients, GET/POST /clients/{id}, GET /clients/{id}/edit
 /contacts, /contacts/new, /contacts/{id}, /contacts/{id}/edit, /contacts/{id}/delete
 /circuits, /circuits/new, /circuits/{id}, /circuits/{id}/edit, /circuits/{id}/delete
 
+# Sites (CRUD)
+/sites, /sites/new, /sites/{id}, /sites/{id}/edit, /sites/{id}/delete
+
 # Known Issues (CRUD)
 /known-issues, /known-issues/new, /known-issues/{id}, /known-issues/{id}/edit, /known-issues/{id}/delete
 
@@ -177,6 +181,9 @@ GET  /api/attachments                # JSON API for attachment picker
 
 # HTMX
 POST /preview                        # Markdown preview
+GET  /tree?folder=...                # Folder tree partial
+POST /docs/id/{id}/metadata          # Inline metadata update
+GET  /attachments/{id}/preview       # Image/PDF inline preview
 ```
 
 ## Security Summary
@@ -229,7 +236,7 @@ npm run build   # → internal/web/static/js/codemirror-bundle.js
 3. **Role checks** — `membership.IsEditor()` / `membership.IsAdmin()`
 4. **Audit logging** — Every write action → `s.audit.Log()`
 5. **CSRF** — Every POST form → `{{.CSRFField}}`
-6. **Migrations** — New SQL in `internal/db/migrations/` (currently at version 6)
+6. **Migrations** — New SQL in `internal/db/migrations/` (currently at version 7)
 7. **Templates** — Add to `internal/web/templates/` and update `loadTemplates()` glob
 8. **No SPA** — Full page loads normal; HTMX for partials only
 9. **Shortcodes** — `{{system:uuid}}` etc. resolved via `s.cmdb.RenderShortcodes()` after markdown render
