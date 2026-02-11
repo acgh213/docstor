@@ -95,6 +95,29 @@ const (
 	ActionChecklistStart    = "checklist.instance.start"
 	ActionChecklistToggle   = "checklist.instance.toggle"
 	ActionChecklistComplete = "checklist.instance.complete"
+
+	// CMDB
+	ActionSystemCreate  = "system.create"
+	ActionSystemUpdate  = "system.update"
+	ActionSystemDelete  = "system.delete"
+	ActionVendorCreate  = "vendor.create"
+	ActionVendorUpdate  = "vendor.update"
+	ActionVendorDelete  = "vendor.delete"
+	ActionContactCreate = "contact.create"
+	ActionContactUpdate = "contact.update"
+	ActionContactDelete = "contact.delete"
+	ActionCircuitCreate = "circuit.create"
+	ActionCircuitUpdate = "circuit.update"
+	ActionCircuitDelete = "circuit.delete"
+
+	// Incidents
+	ActionKnownIssueCreate = "known_issue.create"
+	ActionKnownIssueUpdate = "known_issue.update"
+	ActionKnownIssueDelete = "known_issue.delete"
+	ActionIncidentCreate   = "incident.create"
+	ActionIncidentUpdate   = "incident.update"
+	ActionIncidentDelete   = "incident.delete"
+	ActionIncidentEvent    = "incident.event"
 )
 
 // Common target types
@@ -108,4 +131,11 @@ const (
 	TargetTemplate    = "template"
 	TargetChecklist   = "checklist"
 	TargetCLInstance  = "checklist_instance"
+	TargetSystem      = "system"
+	TargetVendor      = "vendor"
+	TargetContact     = "contact"
+	TargetCircuit      = "circuit"
+	TargetKnownIssue   = "known_issue"
+	TargetIncident     = "incident"
+	TargetIncidentEvent = "incident_event"
 )
