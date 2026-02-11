@@ -16,6 +16,14 @@ import (
 	"github.com/exedev/docstor/internal/docs"
 )
 
+// SVG icons for folder tree (inline, no external deps)
+const (
+	iconChevron = `<svg class="tree-icon tree-chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>`
+	iconFolder  = `<svg class="tree-icon tree-icon-folder" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>`
+	iconDoc     = `<svg class="tree-icon tree-icon-doc" viewBox="0 0 16 16" fill="currentColor"><path d="M3.75 1.5a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V6H9.75A1.75 1.75 0 0 1 8 4.25V1.5H3.75Zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06ZM2 1.75C2 .784 2.784 0 3.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v9.086A1.75 1.75 0 0 1 12.25 16h-8.5A1.75 1.75 0 0 1 2 14.25V1.75Z"/></svg>`
+	iconRunbook = `<svg class="tree-icon tree-icon-runbook" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h8.5C13.216 0 14 .784 14 1.75v12.5A1.75 1.75 0 0 1 12.25 16h-8.5A1.75 1.75 0 0 1 2 14.25V1.75Zm3.5 3a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5Zm0 3a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5Zm0 3a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3Z"/></svg>`
+)
+
 // handleFolderTree returns an HTML partial for the folder tree at a given prefix.
 // GET /tree?folder=...
 func (s *Server) handleFolderTree(w http.ResponseWriter, r *http.Request) {
@@ -46,28 +54,27 @@ func (s *Server) handleFolderTree(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	for _, f := range folders {
-		// Display name is the last segment
 		name := strings.TrimSuffix(f, "/")
 		if idx := strings.LastIndex(name, "/"); idx >= 0 {
 			name = name[idx+1:]
 		}
 		fmt.Fprintf(w, `<div class="tree-folder">`)
 		fmt.Fprintf(w, `<div class="tree-folder-header" hx-get="/tree?folder=%s" hx-target="next .tree-children" hx-swap="innerHTML" onclick="this.parentElement.classList.toggle('open')">`, f)
-		fmt.Fprintf(w, `<span class="tree-arrow">▸</span> 📁 %s</div>`, name)
+		fmt.Fprintf(w, `%s%s<span class="tree-label">%s</span></div>`, iconChevron, iconFolder, name)
 		fmt.Fprintf(w, `<div class="tree-children"></div>`)
 		fmt.Fprintf(w, `</div>`)
 	}
 
 	for _, d := range filteredDocs {
-		icon := "📄"
+		icon := iconDoc
 		if d.DocType == docs.DocTypeRunbook {
-			icon = "📋"
+			icon = iconRunbook
 		}
-		fmt.Fprintf(w, `<div class="tree-doc"><a href="/docs/%s">%s %s</a></div>`, d.Path, icon, d.Title)
+		fmt.Fprintf(w, `<div class="tree-doc"><a href="/docs/%s">%s<span class="tree-label">%s</span></a></div>`, d.Path, icon, d.Title)
 	}
 
 	if len(folders) == 0 && len(filteredDocs) == 0 {
-		fmt.Fprintf(w, `<div class="tree-empty">Empty folder</div>`)
+		fmt.Fprintf(w, `<div class="tree-empty">No items in this folder</div>`)
 	}
 }
 

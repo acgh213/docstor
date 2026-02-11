@@ -27,12 +27,12 @@
                 </div>
 
                 <div class="card folder-tree-panel">
-                    <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">📁 Browse by Folder</h3>
-                    <div id="folder-tree"
+                    <h3 class="tree-panel-title">Browse by Folder</h3>
+                    <div id="folder-tree" class="tree-root"
                          hx-get="/tree?folder="
                          hx-trigger="load"
                          hx-swap="innerHTML">
-                        <span class="text-muted">Loading...</span>
+                        <span class="text-muted">Loading&hellip;</span>
                     </div>
                 </div>
 
