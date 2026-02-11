@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
 </head>
 <body>
+    {{$d := .Content}}
     <div class="app-container">
         {{template "sidebar" .}}
         <main class="main-content">
@@ -26,45 +27,111 @@
                     </div>
                 </div>
 
-                <div class="card folder-tree-panel">
-                    <h3 class="tree-panel-title">Browse by Folder</h3>
-                    <div id="folder-tree" class="tree-root"
+                {{/* ── Collapsible folder tree ── */}}
+                <div class="card folder-tree-panel" id="folder-panel">
+                    <button class="tree-panel-toggle" type="button" onclick="toggleFolderPanel()" aria-expanded="true">
+                        <svg class="tree-panel-toggle-icon" viewBox="0 0 16 16" fill="currentColor" width="16" height="16"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>
+                        <span>Browse by Folder</span>
+                    </button>
+                    <div id="folder-tree-body" class="tree-root"
                          hx-get="/tree?folder="
                          hx-trigger="load"
                          hx-swap="innerHTML">
-                        <span class="text-muted">Loading&hellip;</span>
+                        <span class="text-muted" style="padding: 12px; display: block;">Loading&hellip;</span>
                     </div>
                 </div>
 
+                {{/* ── Filters ── */}}
+                <div class="card docs-filters">
+                    <form method="GET" action="/docs" class="docs-filter-row">
+                        <div class="docs-filter-group">
+                            <label for="filter-client">Client</label>
+                            <select id="filter-client" name="client" onchange="this.form.submit()">
+                                <option value="">All Clients</option>
+                                {{range $d.Clients}}
+                                <option value="{{.ID}}" {{if eq .ID.String $d.ClientID}}selected{{end}}>{{.Name}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="docs-filter-group">
+                            <label for="filter-type">Type</label>
+                            <select id="filter-type" name="type" onchange="this.form.submit()">
+                                <option value="">All Types</option>
+                                <option value="doc" {{if eq $d.DocType "doc"}}selected{{end}}>Doc</option>
+                                <option value="runbook" {{if eq $d.DocType "runbook"}}selected{{end}}>Runbook</option>
+                            </select>
+                        </div>
+                        {{if or $d.ClientID $d.DocType}}
+                        <a href="/docs" class="btn btn-secondary btn-sm" style="align-self: flex-end;">Clear Filters</a>
+                        {{end}}
+                        {{/* Preserve sort when filtering */}}
+                        {{if $d.Sort}}<input type="hidden" name="sort" value="{{$d.Sort}}">{{end}}
+                        {{if eq $d.Dir "desc"}}<input type="hidden" name="dir" value="desc">{{end}}
+                    </form>
+                </div>
+
+                {{/* ── Documents table ── */}}
                 <div class="card">
-                    {{if .Content}}
+                    {{if $d.Docs}}
+                    <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Title</th>
-                                <th>Path</th>
-                                <th>Type</th>
-                                <th>Client</th>
-                                <th>Updated</th>
+                                {{/* Sortable column headers */}}
+                                {{$base := "/docs"}}
+                                {{$qf := ""}}
+                                {{if $d.ClientID}}{{$qf = print "&client=" $d.ClientID}}{{end}}
+                                {{if $d.DocType}}{{$qf = print $qf "&type=" $d.DocType}}{{end}}
+
+                                <th class="sortable-th">
+                                    <a href="{{$base}}?sort=title&dir={{if and (eq $d.Sort "title") (eq $d.Dir "asc")}}desc{{else}}asc{{end}}{{$qf}}" class="sort-link {{if eq $d.Sort "title"}}active{{end}}">
+                                        Title
+                                        {{if eq $d.Sort "title"}}<span class="sort-arrow">{{if eq $d.Dir "asc"}}&uarr;{{else}}&darr;{{end}}</span>{{end}}
+                                    </a>
+                                </th>
+                                <th class="sortable-th">
+                                    <a href="{{$base}}?sort=path&dir={{if and (eq $d.Sort "path") (eq $d.Dir "asc")}}desc{{else}}asc{{end}}{{$qf}}" class="sort-link {{if eq $d.Sort "path"}}active{{end}}">
+                                        Path
+                                        {{if eq $d.Sort "path"}}<span class="sort-arrow">{{if eq $d.Dir "asc"}}&uarr;{{else}}&darr;{{end}}</span>{{end}}
+                                    </a>
+                                </th>
+                                <th class="sortable-th">
+                                    <a href="{{$base}}?sort=type&dir={{if and (eq $d.Sort "type") (eq $d.Dir "asc")}}desc{{else}}asc{{end}}{{$qf}}" class="sort-link {{if eq $d.Sort "type"}}active{{end}}">
+                                        Type
+                                        {{if eq $d.Sort "type"}}<span class="sort-arrow">{{if eq $d.Dir "asc"}}&uarr;{{else}}&darr;{{end}}</span>{{end}}
+                                    </a>
+                                </th>
+                                <th class="sortable-th">
+                                    <a href="{{$base}}?sort=client&dir={{if and (eq $d.Sort "client") (eq $d.Dir "asc")}}desc{{else}}asc{{end}}{{$qf}}" class="sort-link {{if eq $d.Sort "client"}}active{{end}}">
+                                        Client
+                                        {{if eq $d.Sort "client"}}<span class="sort-arrow">{{if eq $d.Dir "asc"}}&uarr;{{else}}&darr;{{end}}</span>{{end}}
+                                    </a>
+                                </th>
+                                <th class="sortable-th">
+                                    <a href="{{$base}}?sort=updated&dir={{if and (eq $d.Sort "updated") (eq $d.Dir "asc")}}desc{{else}}asc{{end}}{{$qf}}" class="sort-link {{if eq $d.Sort "updated"}}active{{end}}">
+                                        Updated
+                                        {{if eq $d.Sort "updated"}}<span class="sort-arrow">{{if eq $d.Dir "asc"}}&uarr;{{else}}&darr;{{end}}</span>{{end}}
+                                    </a>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {{range .Content}}
+                            {{range $d.Docs}}
                             <tr>
                                 <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
                                 <td><code>{{.Path}}</code></td>
                                 <td>
                                     {{if eq .DocType "runbook"}}
-                                    <span class="badge badge-warning">Runbook</span>
+                                    <span class="badge badge-runbook">Runbook</span>
                                     {{else}}
-                                    <span class="badge">Doc</span>
+                                    <span class="badge badge-doc">Doc</span>
                                     {{end}}
                                 </td>
                                 <td>
                                     {{if .Client}}
                                     <a href="/clients/{{.Client.ID}}">{{.Client.Name}}</a>
                                     {{else}}
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted">&mdash;</span>
                                     {{end}}
                                 </td>
                                 <td>{{timeTag .UpdatedAt "Jan 2, 2006 3:04 PM"}}</td>
@@ -72,13 +139,21 @@
                             {{end}}
                         </tbody>
                     </table>
+                    </div>
+                    <div class="text-muted" style="margin-top: 8px; font-size: 13px;">{{len $d.Docs}} document{{if ne (len $d.Docs) 1}}s{{end}}</div>
                     {{else}}
                     <div class="empty-state">
+                        {{if or $d.ClientID $d.DocType}}
+                        <h3>No matching documents</h3>
+                        <p>Try adjusting your filters.</p>
+                        <a href="/docs" class="btn btn-secondary">Clear Filters</a>
+                        {{else}}
                         <div class="empty-state-icon">📄</div>
                         <h3>No documents yet</h3>
                         <p>Create your first document to get started organizing your knowledge base.</p>
                         {{if .Membership.IsEditor}}
                         <a href="/docs/new" class="btn btn-primary">Create Document</a>
+                        {{end}}
                         {{end}}
                     </div>
                     {{end}}
@@ -87,6 +162,36 @@
             </div>
         </main>
     </div>
+<script>
+// Collapsible folder tree panel
+function toggleFolderPanel() {
+    var body = document.getElementById('folder-tree-body');
+    var btn = document.querySelector('.tree-panel-toggle');
+    var panel = document.getElementById('folder-panel');
+    var isOpen = !panel.classList.contains('collapsed');
+    if (isOpen) {
+        panel.classList.add('collapsed');
+        btn.setAttribute('aria-expanded', 'false');
+        localStorage.setItem('docstor-folder-panel', 'collapsed');
+    } else {
+        panel.classList.remove('collapsed');
+        btn.setAttribute('aria-expanded', 'true');
+        localStorage.setItem('docstor-folder-panel', 'open');
+    }
+}
+// Restore state from localStorage
+(function() {
+    var saved = localStorage.getItem('docstor-folder-panel');
+    if (saved === 'collapsed') {
+        var panel = document.getElementById('folder-panel');
+        if (panel) {
+            panel.classList.add('collapsed');
+            var btn = panel.querySelector('.tree-panel-toggle');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+    }
+})();
+</script>
 {{template "page_scripts" .}}
 </body>
 </html>

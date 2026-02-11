@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
+	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
 )
@@ -93,12 +95,43 @@ type ClientOption struct {
 	Selected bool
 }
 
+type DocsListData struct {
+	Docs       []docs.Document
+	Clients    []clients.Client
+	ClientID   string // active filter
+	DocType    string // active filter
+	Sort       string // active sort column
+	Dir        string // "asc" or "desc"
+}
+
 func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenant := auth.TenantFromContext(ctx)
 	mem := auth.MembershipFromContext(ctx)
 
-	docsList, err := s.docs.List(ctx, tenant.ID, nil, nil)
+	// Parse filters
+	var clientFilter *uuid.UUID
+	clientIDStr := r.URL.Query().Get("client")
+	if clientIDStr != "" {
+		if id, err := uuid.Parse(clientIDStr); err == nil {
+			clientFilter = &id
+		}
+	}
+
+	var docTypeFilter *docs.DocType
+	dtStr := r.URL.Query().Get("type")
+	if dtStr == "doc" || dtStr == "runbook" {
+		dt := docs.DocType(dtStr)
+		docTypeFilter = &dt
+	}
+
+	sortCol := r.URL.Query().Get("sort")
+	sortDir := r.URL.Query().Get("dir")
+	if sortDir != "desc" {
+		sortDir = "asc"
+	}
+
+	docsList, err := s.docs.List(ctx, tenant.ID, clientFilter, docTypeFilter)
 	if err != nil {
 		slog.Error("failed to list documents", "error", err)
 		data := s.newPageData(r)
@@ -108,7 +141,7 @@ func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filter by sensitivity for the current user's role
+	// Filter by sensitivity
 	if mem != nil {
 		var filtered []docs.Document
 		for _, d := range docsList {
@@ -119,10 +152,75 @@ func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 		docsList = filtered
 	}
 
+	// Sort
+	sortDocs(docsList, sortCol, sortDir)
+
+	clientsList, _ := s.clients.List(ctx, tenant.ID)
+
 	data := s.newPageData(r)
 	data.Title = "Documents - Docstor"
-	data.Content = docsList
+	data.Content = DocsListData{
+		Docs:     docsList,
+		Clients:  clientsList,
+		ClientID: clientIDStr,
+		DocType:  dtStr,
+		Sort:     sortCol,
+		Dir:      sortDir,
+	}
 	s.render(w, r, "docs_list.html", data)
+}
+
+func sortDocs(docsList []docs.Document, col, dir string) {
+	switch col {
+	case "title":
+		sort.Slice(docsList, func(i, j int) bool {
+			if dir == "desc" {
+				return strings.ToLower(docsList[i].Title) > strings.ToLower(docsList[j].Title)
+			}
+			return strings.ToLower(docsList[i].Title) < strings.ToLower(docsList[j].Title)
+		})
+	case "path":
+		sort.Slice(docsList, func(i, j int) bool {
+			if dir == "desc" {
+				return docsList[i].Path > docsList[j].Path
+			}
+			return docsList[i].Path < docsList[j].Path
+		})
+	case "type":
+		sort.Slice(docsList, func(i, j int) bool {
+			if dir == "desc" {
+				return string(docsList[i].DocType) > string(docsList[j].DocType)
+			}
+			return string(docsList[i].DocType) < string(docsList[j].DocType)
+		})
+	case "client":
+		sort.Slice(docsList, func(i, j int) bool {
+			ci := ""
+			cj := ""
+			if docsList[i].Client != nil {
+				ci = docsList[i].Client.Name
+			}
+			if docsList[j].Client != nil {
+				cj = docsList[j].Client.Name
+			}
+			if dir == "desc" {
+				return strings.ToLower(ci) > strings.ToLower(cj)
+			}
+			return strings.ToLower(ci) < strings.ToLower(cj)
+		})
+	case "updated":
+		sort.Slice(docsList, func(i, j int) bool {
+			if dir == "desc" {
+				return docsList[i].UpdatedAt.After(docsList[j].UpdatedAt)
+			}
+			return docsList[i].UpdatedAt.Before(docsList[j].UpdatedAt)
+		})
+	default:
+		// Default: most recently updated first
+		sort.Slice(docsList, func(i, j int) bool {
+			return docsList[i].UpdatedAt.After(docsList[j].UpdatedAt)
+		})
+	}
 }
 
 func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
