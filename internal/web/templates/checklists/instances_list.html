@@ -1,0 +1,97 @@
+{{define "instances_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                {{$data := .Content}}
+                {{$instances := index $data "Instances"}}
+                {{$status := index $data "Status"}}
+
+                <nav class="breadcrumbs">
+                    <a href="/checklists">Checklists</a>
+                    <span class="separator">/</span>
+                    Runs
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>Checklist Runs</h2>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <a href="/checklist-instances" class="btn btn-sm {{if not $status}}btn-primary{{else}}btn-secondary{{end}}">All</a>
+                    <a href="/checklist-instances?status=in_progress" class="btn btn-sm {{if eq $status "in_progress"}}btn-primary{{else}}btn-secondary{{end}}">In Progress</a>
+                    <a href="/checklist-instances?status=completed" class="btn btn-sm {{if eq $status "completed"}}btn-primary{{else}}btn-secondary{{end}}">Completed</a>
+                </div>
+
+                <div class="card">
+                    {{if $instances}}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Checklist</th>
+                                <th>Linked To</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Started By</th>
+                                <th>Started</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $instances}}
+                            <tr>
+                                <td><a href="/checklists/{{.ChecklistID}}">{{if .Checklist}}{{.Checklist.Name}}{{else}}—{{end}}</a></td>
+                                <td>
+                                    {{if and .LinkedType .LinkedID}}
+                                    <a href="/docs/id/{{.LinkedID}}/edit">{{if .LinkedTitle}}{{.LinkedTitle}}{{else}}Document{{end}}</a>
+                                    {{else}}
+                                    <span class="text-muted">—</span>
+                                    {{end}}
+                                </td>
+                                <td>{{.CompletedCount}}/{{.TotalCount}}</td>
+                                <td>
+                                    {{if eq .Status "completed"}}
+                                    <span class="badge badge-success">Completed</span>
+                                    {{else}}
+                                    <span class="badge badge-warning">In Progress</span>
+                                    {{end}}
+                                </td>
+                                <td>{{if .Author}}{{.Author.Name}}{{end}}</td>
+                                <td>{{timeTag .CreatedAt "Jan 2, 2006"}}</td>
+                                <td><a href="/checklist-instances/{{.ID}}" class="btn btn-secondary btn-sm">View</a></td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    {{else}}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>No checklist runs yet</h3>
+                        <p>Start a checklist from the <a href="/checklists">checklists page</a> to begin tracking progress.</p>
+                    </div>
+                    {{end}}
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

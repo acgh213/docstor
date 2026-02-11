@@ -18,10 +18,12 @@ import (
 	"github.com/exedev/docstor/internal/attachments"
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
+	"github.com/exedev/docstor/internal/checklists"
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
+	tmplpkg "github.com/exedev/docstor/internal/templates"
 )
 
 //go:embed templates
@@ -40,9 +42,11 @@ type Server struct {
 	clients     *clients.Repository
 	docs        *docs.Repository
 	runbooks    *runbooks.Repository
-	attachments *attachments.Repo
-	storage     attachments.Storage
-	loginLimiter *auth.RateLimiter
+	attachments     *attachments.Repo
+	storage         attachments.Storage
+	templates_repo  *tmplpkg.Repository
+	checklists      *checklists.Repository
+	loginLimiter    *auth.RateLimiter
 }
 
 func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
@@ -64,6 +68,8 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		panic(err)
 	}
 	attachmentsRepo := attachments.NewRepo(db)
+	templatesRepo := tmplpkg.NewRepository(db)
+	checklistsRepo := checklists.NewRepository(db)
 
 	s := &Server{
 		db:           db,
@@ -74,9 +80,11 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		clients:      clientsRepo,
 		docs:         docsRepo,
 		runbooks:     runbooksRepo,
-		attachments:  attachmentsRepo,
-		storage:      localStorage,
-		loginLimiter: auth.NewRateLimiter(5, time.Minute),
+		attachments:     attachmentsRepo,
+		storage:         localStorage,
+		templates_repo:  templatesRepo,
+		checklists:      checklistsRepo,
+		loginLimiter:    auth.NewRateLimiter(5, time.Minute),
 	}
 
 	if err := s.loadTemplates(); err != nil {
@@ -163,6 +171,38 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 			r.Post("/{id}/delete", s.handleBundleDelete)
 		})
 
+		// Templates
+		r.Route("/templates", func(r chi.Router) {
+			r.Get("/", s.handleTemplatesList)
+			r.Get("/new", s.handleTemplateNew)
+			r.Post("/", s.handleTemplateCreate)
+			r.Get("/{id}", s.handleTemplateView)
+			r.Get("/{id}/edit", s.handleTemplateEdit)
+			r.Post("/{id}", s.handleTemplateUpdate)
+			r.Post("/{id}/delete", s.handleTemplateDelete)
+		})
+		r.Get("/docs/new/from-template", s.handleDocNewFromTemplate)
+
+		// Checklists
+		r.Route("/checklists", func(r chi.Router) {
+			r.Get("/", s.handleChecklistsList)
+			r.Get("/new", s.handleChecklistNew)
+			r.Post("/", s.handleChecklistCreate)
+			r.Get("/{id}", s.handleChecklistView)
+			r.Get("/{id}/edit", s.handleChecklistEdit)
+			r.Post("/{id}", s.handleChecklistUpdate)
+			r.Post("/{id}/delete", s.handleChecklistDelete)
+		})
+
+		// Checklist Instances
+		r.Route("/checklist-instances", func(r chi.Router) {
+			r.Get("/", s.handleInstancesList)
+			r.Post("/", s.handleInstanceStart)
+			r.Get("/{id}", s.handleInstanceView)
+			r.Post("/{id}/items/{itemID}/toggle", s.handleInstanceToggleItem)
+			r.Post("/{id}/delete", s.handleInstanceDelete)
+		})
+
 		// Clients
 		r.Route("/clients", func(r chi.Router) {
 			r.Get("/", s.handleClientsList)
@@ -232,6 +272,18 @@ func (s *Server) loadTemplates() error {
 				return v
 			}
 		},
+		"tof": func(v int) float64 {
+			return float64(v)
+		},
+		"mulf": func(a, b float64) float64 {
+			return a * b
+		},
+		"divf": func(a, b float64) float64 {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
 		"timeTag": func(t time.Time, format string) template.HTML {
 			iso := t.Format(time.RFC3339)
 			display := t.Format(format)
@@ -248,6 +300,8 @@ func (s *Server) loadTemplates() error {
 		"templates/runbooks/*.html",
 		"templates/attachments/*.html",
 		"templates/admin/*.html",
+		"templates/templates/*.html",
+		"templates/checklists/*.html",
 		"templates/landing.html",
 	)
 	if err != nil {

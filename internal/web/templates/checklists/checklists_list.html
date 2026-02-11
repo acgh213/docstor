@@ -1,0 +1,86 @@
+{{define "checklists_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    Checklists
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>Checklists</h2>
+                        <div class="page-header-actions">
+                            {{if .Membership.IsEditor}}
+                            <a href="/checklists/new" class="btn btn-primary">New Checklist</a>
+                            {{end}}
+                            <a href="/checklist-instances" class="btn btn-secondary">View Runs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    {{if .Content}}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Items</th>
+                                <th>Created By</th>
+                                <th>Created</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Content}}
+                            <tr>
+                                <td><a href="/checklists/{{.ID}}">{{.Name}}</a></td>
+                                <td>{{.ItemCount}} items</td>
+                                <td>{{if .Author}}{{.Author.Name}}{{end}}</td>
+                                <td>{{timeTag .CreatedAt "Jan 2, 2006"}}</td>
+                                <td>
+                                    {{if $.Membership.IsEditor}}
+                                    <form method="POST" action="/checklist-instances" style="display:inline;">
+                                        {{$.CSRFField}}
+                                        <input type="hidden" name="checklist_id" value="{{.ID}}">
+                                        <button type="submit" class="btn btn-primary btn-sm">Start</button>
+                                    </form>
+                                    {{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    {{else}}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">☑️</div>
+                        <h3>No checklists yet</h3>
+                        <p>Create reusable checklists for procedures, onboarding, and recurring tasks.</p>
+                        {{if .Membership.IsEditor}}
+                        <a href="/checklists/new" class="btn btn-primary">Create Checklist</a>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

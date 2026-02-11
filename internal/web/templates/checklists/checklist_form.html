@@ -1,0 +1,66 @@
+{{define "checklist_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                {{$cl := .Content}}
+
+                <nav class="breadcrumbs">
+                    <a href="/checklists">Checklists</a>
+                    <span class="separator">/</span>
+                    {{if $cl}}Edit{{else}}New Checklist{{end}}
+                </nav>
+
+                <div class="page-header">
+                    <h2>{{if $cl}}Edit Checklist{{else}}New Checklist{{end}}</h2>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="{{if $cl}}/checklists/{{$cl.ID}}{{else}}/checklists{{end}}" class="form">
+                        {{.CSRFField}}
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" required class="form-control"
+                                   value="{{if $cl}}{{$cl.Name}}{{end}}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description (optional)</label>
+                            <textarea id="description" name="description" rows="3" class="form-control">{{if $cl}}{{$cl.Description}}{{end}}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="items">Checklist Items (one per line)</label>
+                            <textarea id="items" name="items" rows="10" class="form-control" placeholder="Verify firewall rules&#10;Check backup status&#10;Test failover">{{if $cl}}{{range $cl.Items}}{{.Text}}
+{{end}}{{end}}</textarea>
+                            <small class="form-help">Each line becomes a checklist item. Empty lines are ignored.</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{{if $cl}}Save Changes{{else}}Create Checklist{{end}}</button>
+                            <a href="/checklists" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

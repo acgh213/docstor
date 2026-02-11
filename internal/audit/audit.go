@@ -82,6 +82,19 @@ const (
 	ActionMembershipAdd  = "membership.add"
 	ActionMembershipEdit = "membership.edit"
 	ActionMembershipDel  = "membership.delete"
+
+	// Templates
+	ActionTemplateCreate = "template.create"
+	ActionTemplateUpdate = "template.update"
+	ActionTemplateDelete = "template.delete"
+
+	// Checklists
+	ActionChecklistCreate   = "checklist.create"
+	ActionChecklistUpdate   = "checklist.update"
+	ActionChecklistDelete   = "checklist.delete"
+	ActionChecklistStart    = "checklist.instance.start"
+	ActionChecklistToggle   = "checklist.instance.toggle"
+	ActionChecklistComplete = "checklist.instance.complete"
 )
 
 // Common target types
@@ -91,5 +104,8 @@ const (
 	TargetDocument   = "document"
 	TargetRevision   = "revision"
 	TargetClient     = "client"
-	TargetMembership = "membership"
+	TargetMembership  = "membership"
+	TargetTemplate    = "template"
+	TargetChecklist   = "checklist"
+	TargetCLInstance  = "checklist_instance"
 )

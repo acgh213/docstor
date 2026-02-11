@@ -1,0 +1,114 @@
+{{define "checklist_view.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                {{$data := .Content}}
+                {{$cl := index $data "Checklist"}}
+                {{$instances := index $data "Instances"}}
+
+                <nav class="breadcrumbs">
+                    <a href="/checklists">Checklists</a>
+                    <span class="separator">/</span>
+                    {{$cl.Name}}
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>{{$cl.Name}}</h2>
+                        <div class="page-header-actions">
+                            {{if $.Membership.IsEditor}}
+                            <form method="POST" action="/checklist-instances" style="display:inline;">
+                                {{$.CSRFField}}
+                                <input type="hidden" name="checklist_id" value="{{$cl.ID}}">
+                                <button type="submit" class="btn btn-primary">Start Run</button>
+                            </form>
+                            <a href="/checklists/{{$cl.ID}}/edit" class="btn btn-secondary">Edit</a>
+                            <form method="POST" action="/checklists/{{$cl.ID}}/delete" style="display:inline;">
+                                {{$.CSRFField}}
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        data-confirm="This will permanently delete this checklist and all its runs."
+                                        data-confirm-title="Delete Checklist?">Delete</button>
+                            </form>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                {{if $cl.Description}}
+                <p class="text-muted">{{$cl.Description}}</p>
+                {{end}}
+
+                <div class="card">
+                    <h3>Items ({{$cl.ItemCount}})</h3>
+                    {{if $cl.Items}}
+                    <ol class="checklist-items-preview">
+                        {{range $cl.Items}}
+                        <li>{{.Text}}</li>
+                        {{end}}
+                    </ol>
+                    {{else}}
+                    <p class="text-muted">No items defined.</p>
+                    {{end}}
+                </div>
+
+                {{if $instances}}
+                <div class="card" style="margin-top: 1rem;">
+                    <h3>Recent Runs</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Started By</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Started</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $instances}}
+                            <tr>
+                                <td>{{if .Author}}{{.Author.Name}}{{end}}</td>
+                                <td>
+                                    <span class="progress-bar-mini">
+                                        <span class="progress-bar-fill" style="width: {{if .TotalCount}}{{printf "%.0f" (divf (mulf (tof .CompletedCount) 100.0) (tof .TotalCount))}}%{{else}}0%{{end}}"></span>
+                                    </span>
+                                    {{.CompletedCount}}/{{.TotalCount}}
+                                </td>
+                                <td>
+                                    {{if eq .Status "completed"}}
+                                    <span class="badge badge-success">Completed</span>
+                                    {{else}}
+                                    <span class="badge badge-warning">In Progress</span>
+                                    {{end}}
+                                </td>
+                                <td>{{timeTag .CreatedAt "Jan 2, 2006"}}</td>
+                                <td><a href="/checklist-instances/{{.ID}}" class="btn btn-secondary btn-sm">View</a></td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}
