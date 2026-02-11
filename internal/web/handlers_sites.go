@@ -16,8 +16,9 @@ import (
 )
 
 type SiteFormData struct {
-	Site    *sites.Site
-	Clients []clients.Client
+	Site             *sites.Site
+	Clients          []clients.Client
+	PreselectedClient string // client ID to pre-select in dropdown for new sites
 }
 
 type SiteViewData struct {
@@ -63,18 +64,18 @@ func (s *Server) handleSiteNew(w http.ResponseWriter, r *http.Request) {
 
 	clientsList, _ := s.clients.List(ctx, tenant.ID)
 
-	data := s.newPageData(r)
-	data.Title = "New Site - Docstor"
-	data.Content = SiteFormData{Clients: clientsList}
+	formData := SiteFormData{Clients: clientsList}
 
 	// Pre-select client from query param
 	if cid := r.URL.Query().Get("client_id"); cid != "" {
-		data.Content = SiteFormData{
-			Clients: clientsList,
-			Site:    &sites.Site{ClientID: uuid.MustParse(cid)},
+		if _, err := uuid.Parse(cid); err == nil {
+			formData.PreselectedClient = cid
 		}
 	}
 
+	data := s.newPageData(r)
+	data.Title = "New Site - Docstor"
+	data.Content = formData
 	s.render(w, r, "site_form.html", data)
 }
 

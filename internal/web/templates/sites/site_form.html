@@ -18,18 +18,19 @@
             <div class="content">
                 {{template "alerts" .}}
 
+                {{$isEdit := and $site (ne $site.ID.String "00000000-0000-0000-0000-000000000000")}}
                 <nav class="breadcrumbs">
                     <a href="/sites">Sites</a>
                     <span class="separator">/</span>
-                    {{if $site}}{{if $site.ID}}Edit{{else}}New Site{{end}}{{else}}New Site{{end}}
+                    {{if $isEdit}}Edit{{else}}New Site{{end}}
                 </nav>
 
                 <div class="page-header">
-                    <h2>{{if $site}}{{if $site.ID}}Edit Site{{else}}New Site{{end}}{{else}}New Site{{end}}</h2>
+                    <h2>{{if $isEdit}}Edit Site{{else}}New Site{{end}}</h2>
                 </div>
 
                 <div class="card">
-                    <form method="POST" action="{{if $site}}{{if $site.ID}}/sites/{{$site.ID}}{{else}}/sites{{end}}{{else}}/sites{{end}}" class="form">
+                    <form method="POST" action="{{if $isEdit}}/sites/{{$site.ID}}{{else}}/sites{{end}}" class="form">
                         {{.CSRFField}}
 
                         <div class="form-group">
@@ -44,7 +45,7 @@
                             <select id="client_id" name="client_id" required class="form-control">
                                 <option value="">-- Select Client --</option>
                                 {{range $form.Clients}}
-                                <option value="{{.ID}}" {{if $site}}{{if eq .ID $site.ClientID}}selected{{end}}{{end}}>{{.Name}} ({{.Code}})</option>
+                                <option value="{{.ID}}" {{if $isEdit}}{{if eq .ID $site.ClientID}}selected{{end}}{{else}}{{if eq .ID.String $form.PreselectedClient}}selected{{end}}{{end}}>{{.Name}} ({{.Code}})</option>
                                 {{end}}
                             </select>
                         </div>
@@ -64,7 +65,7 @@
 
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">
-                                {{if $site}}{{if $site.ID}}Save Changes{{else}}Create Site{{end}}{{else}}Create Site{{end}}
+                                {{if $isEdit}}Save Changes{{else}}Create Site{{end}}
                             </button>
                             <a href="/sites" class="btn btn-secondary">Cancel</a>
                         </div>
