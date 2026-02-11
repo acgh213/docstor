@@ -19,30 +19,94 @@
 
                 <div class="page-header">
                     <h2>Dashboard</h2>
-                </div>
-                <div class="dashboard">
-                    <section class="card">
-                        <h3>📄 Quick Links</h3>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
-                            <a href="/docs" class="btn btn-secondary">All Documents</a>
-                            <a href="/runbooks" class="btn btn-secondary">Runbooks</a>
-                            <a href="/clients" class="btn btn-secondary">Clients</a>
-                            <a href="/evidence-bundles" class="btn btn-secondary">Evidence Bundles</a>
-                            {{if .Membership.IsEditor}}
-                            <a href="/docs/new" class="btn btn-primary">New Document</a>
-                            {{end}}
-                        </div>
-                    </section>
-                    <section class="card">
-                        <h3>⚠️ Runbooks</h3>
-                        <p class="text-muted">Check the <a href="/runbooks">Runbooks Dashboard</a> for overdue and unverified runbooks.</p>
-                    </section>
-                    <section class="card">
-                        <h3>🔍 Search</h3>
-                        <p class="text-muted">Use <kbd>Ctrl+K</kbd> to search docs from anywhere.</p>
-                    </section>
+                    {{if .Membership.IsEditor}}
+                    <a href="/docs/new" class="btn btn-primary">New Document</a>
+                    {{end}}
                 </div>
 
+                {{with .Content}}
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">{{.TotalDocs}}</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{.TotalRunbooks}}</div>
+                        <div class="stat-label">Runbooks</div>
+                    </div>
+                    <div class="stat-card {{if gt .OverdueCount 0}}stat-card-warning{{end}}">
+                        <div class="stat-number">{{.OverdueCount}}</div>
+                        <div class="stat-label">Overdue Runbooks</div>
+                    </div>
+                </div>
+
+                {{if .OverdueRunbooks}}
+                <section class="card dashboard-section">
+                    <h3>&#x26A0;&#xFE0F; Overdue Runbooks</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Client</th>
+                                <th>Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .OverdueRunbooks}}
+                            <tr>
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td>{{if .ClientName}}{{.ClientName}}{{else}}<span class="text-muted">&mdash;</span>{{end}}</td>
+                                <td>{{if .Status}}{{if .Status.NextDueAt}}{{timeTag .Status.NextDueAt "Jan 2, 2006"}}{{end}}{{end}}</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 8px;">
+                        <a href="/runbooks" class="btn btn-secondary btn-sm">View all runbooks &rarr;</a>
+                    </div>
+                </section>
+                {{end}}
+
+                {{if .RecentDocs}}
+                <section class="card dashboard-section">
+                    <h3>&#x1F4DD; Recently Updated</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Client</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .RecentDocs}}
+                            <tr>
+                                <td><a href="/docs/{{.Path}}">{{.Title}}</a></td>
+                                <td><span class="badge {{if eq .DocType "runbook"}}badge-runbook{{else}}badge-doc{{end}}">{{.DocType}}</span></td>
+                                <td>{{if .Client}}{{.Client.Name}}{{else}}<span class="text-muted">&mdash;</span>{{end}}</td>
+                                <td>{{timeTag .UpdatedAt "Jan 2, 2006 3:04 PM"}}</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 8px;">
+                        <a href="/docs" class="btn btn-secondary btn-sm">View all docs &rarr;</a>
+                    </div>
+                </section>
+                {{end}}
+
+                {{end}}
+
+                <section class="card dashboard-section">
+                    <h3>&#x1F517; Quick Links</h3>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                        <a href="/docs" class="btn btn-secondary">All Documents</a>
+                        <a href="/runbooks" class="btn btn-secondary">Runbooks</a>
+                        <a href="/clients" class="btn btn-secondary">Clients</a>
+                        <a href="/evidence-bundles" class="btn btn-secondary">Evidence Bundles</a>
+                    </div>
+                </section>
             </div>
         </main>
     </div>

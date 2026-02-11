@@ -18,6 +18,8 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
+	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/runbooks"
 )
 
 type PageData struct {
@@ -236,11 +238,73 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+// Home handler: landing page for unauthenticated users, dashboard for authenticated
+
+func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user != nil {
+		s.handleDashboard(w, r)
+		return
+	}
+	// Unauthenticated: show landing page
+	data := s.newPageData(r)
+	data.Title = "Docstor — Documentation You Can Trust"
+	data.Content = time.Now().Year()
+	s.render(w, r, "landing.html", data)
+}
+
+// Dashboard data for authenticated users
+type DashboardData struct {
+	TotalDocs      int
+	TotalRunbooks  int
+	OverdueCount   int
+	RecentDocs     []docs.Document
+	OverdueRunbooks []runbooks.RunbookWithStatus
+}
+
 // Dashboard handlers
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenant := auth.TenantFromContext(ctx)
+
+	var dd DashboardData
+
+	// Count total documents
+	allDocs, err := s.docs.List(ctx, tenant.ID, nil, nil)
+	if err != nil {
+		slog.Error("dashboard: failed to list docs", "error", err)
+	} else {
+		dd.TotalDocs = len(allDocs)
+		// Recent docs: up to 5
+		limit := 5
+		if len(allDocs) < limit {
+			limit = len(allDocs)
+		}
+		dd.RecentDocs = allDocs[:limit]
+	}
+
+	// Count runbooks
+	runbookType := docs.DocTypeRunbook
+	runbookDocs, err := s.docs.List(ctx, tenant.ID, nil, &runbookType)
+	if err != nil {
+		slog.Error("dashboard: failed to list runbooks", "error", err)
+	} else {
+		dd.TotalRunbooks = len(runbookDocs)
+	}
+
+	// Overdue runbooks
+	overdue, err := s.runbooks.ListOverdue(ctx, tenant.ID)
+	if err != nil {
+		slog.Error("dashboard: failed to list overdue runbooks", "error", err)
+	} else {
+		dd.OverdueRunbooks = overdue
+		dd.OverdueCount = len(overdue)
+	}
+
 	data := s.newPageData(r)
 	data.Title = "Dashboard - Docstor"
+	data.Content = dd
 	s.render(w, r, "index.html", data)
 }
 

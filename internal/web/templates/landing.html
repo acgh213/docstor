@@ -1,0 +1,77 @@
+{{define "landing.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="landing-page">
+    <header class="landing-header">
+        <div class="landing-container">
+            <div class="landing-header-inner">
+                <span class="landing-logo">Docstor</span>
+                <a href="/login" class="btn btn-primary btn-sm">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="landing-hero">
+        <div class="landing-container">
+            <h1 class="landing-hero-title">Documentation you can trust at 2&nbsp;AM</h1>
+            <p class="landing-hero-subtitle">Docstor is a documentation system built for MSPs &mdash; runbooks, client docs, audit trails, and verification workflows. Everything your team needs to stay confident on&#8209;call.</p>
+            <a href="/login" class="btn btn-primary btn-lg">Sign In &rarr;</a>
+        </div>
+    </section>
+
+    <section class="landing-features">
+        <div class="landing-container">
+            <h2 class="landing-section-title">Built for the work you actually do</h2>
+            <div class="landing-cards">
+                <div class="landing-card">
+                    <div class="landing-card-icon">&#x1F4C4;</div>
+                    <h3>Docs &amp; Runbooks</h3>
+                    <p>Markdown-powered documentation with revision history, diff views, and never-lose-data immutable revisions.</p>
+                </div>
+                <div class="landing-card">
+                    <div class="landing-card-icon">&#x2705;</div>
+                    <h3>Verification Workflows</h3>
+                    <p>Set verification cadences on runbooks. Track who verified what and when. Never wonder if a runbook is current.</p>
+                </div>
+                <div class="landing-card">
+                    <div class="landing-card-icon">&#x1F50D;</div>
+                    <h3>Full-Text Search</h3>
+                    <p>Find any doc instantly. Filter by client, type, or owner. Get to the answer fast when it matters most.</p>
+                </div>
+                <div class="landing-card">
+                    <div class="landing-card-icon">&#x1F512;</div>
+                    <h3>Audit Trail</h3>
+                    <p>Every change logged. Every verification recorded. Complete accountability for compliance and peace of mind.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="landing-secondary">
+        <div class="landing-container">
+            <h2 class="landing-section-title">And everything else you need</h2>
+            <ul class="landing-checklist">
+                <li>Multi-tenant with role-based access &mdash; Admin, Editor, Reader</li>
+                <li>Client-scoped documentation</li>
+                <li>Evidence bundles for compliance</li>
+                <li>Sensitivity labels &mdash; public, restricted, confidential</li>
+            </ul>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <div class="landing-container">
+            <p>Built for MSPs. Open source. No tracking.</p>
+            <p class="landing-footer-copy">&copy; {{.Content}} Docstor</p>
+        </div>
+    </footer>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,85 @@
+{{define "admin_user_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/admin/users">Admin</a>
+                    <span class="separator">/</span>
+                    <a href="/admin/users">Users</a>
+                    <span class="separator">/</span>
+                    {{if .Content.IsEdit}}Edit{{else}}New User{{end}}
+                </nav>
+
+                <div class="page-header">
+                    <h2>{{if .Content.IsEdit}}Edit User{{else}}New User{{end}}</h2>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="{{if .Content.IsEdit}}/admin/users/{{.Content.User.ID}}{{else}}/admin/users{{end}}" class="form">
+                        {{.CSRFField}}
+                        {{if not .Content.IsEdit}}
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required class="form-control"
+                                   placeholder="user@example.com">
+                        </div>
+                        {{end}}
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" required class="form-control"
+                                   value="{{if .Content.User}}{{.Content.User.Name}}{{end}}"
+                                   placeholder="Full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password{{if .Content.IsEdit}} <small>(leave blank to keep current)</small>{{end}}</label>
+                            <input type="password" id="password" name="password" class="form-control"
+                                   {{if not .Content.IsEdit}}required{{end}}
+                                   minlength="8" placeholder="Min 8 characters">
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Role</label>
+                            <select id="role" name="role" required class="form-control">
+                                <option value="reader" {{if and .Content.User (eq .Content.User.Role "reader")}}selected{{end}}>Reader</option>
+                                <option value="editor" {{if and .Content.User (eq .Content.User.Role "editor")}}selected{{end}}>Editor</option>
+                                <option value="admin" {{if and .Content.User (eq .Content.User.Role "admin")}}selected{{end}}>Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{{if .Content.IsEdit}}Save Changes{{else}}Create User{{end}}</button>
+                            <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+
+                    {{if .Content.IsEdit}}
+                    <hr style="margin:2rem 0">
+                    <form method="POST" action="/admin/users/{{.Content.User.ID}}/delete" class="form">
+                        {{.CSRFField}}
+                        <button type="submit" class="btn btn-danger"
+                                data-confirm="This will remove the user from this tenant. They will lose all access."
+                                data-confirm-title="Remove user?">Remove User from Tenant</button>
+                    </form>
+                    {{end}}
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

@@ -13,6 +13,9 @@
         <a href="/clients" class="nav-item" data-nav="clients">Clients</a>
         <a href="/evidence-bundles" class="nav-item" data-nav="evidence-bundles">Evidence Bundles</a>
         <a href="/search" class="nav-item" data-nav="search">Search</a>
+        {{if .Membership.IsAdmin}}
+        <a href="/admin/users" class="nav-item" data-nav="admin">⚙️ Admin</a>
+        {{end}}
     </nav>
 </aside>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>

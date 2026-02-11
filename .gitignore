@@ -36,3 +36,9 @@ Thumbs.db
 
 # Uploads (if using local storage)
 uploads/
+
+# Build artifacts
+docstor
+editor-bundle/node_modules/
+editor-bundle/package-lock.json
+.claude/

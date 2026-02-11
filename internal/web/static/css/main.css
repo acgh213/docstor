@@ -1521,3 +1521,268 @@ tr:hover td {
         margin: 16px;
     }
 }
+
+/* =============================================
+   Landing Page
+   ============================================= */
+
+.landing-page {
+    background: var(--color-surface);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Header */
+.landing-header {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.landing-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+}
+
+.landing-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+}
+
+/* Hero */
+.landing-hero {
+    padding: 80px 0 64px;
+    text-align: center;
+}
+
+.landing-hero-title {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--color-text);
+    margin: 0 0 20px;
+    letter-spacing: -0.03em;
+}
+
+.landing-hero-subtitle {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 600px;
+    margin: 0 auto 32px;
+}
+
+.btn-lg {
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius);
+}
+
+/* Feature cards */
+.landing-features {
+    padding: 64px 0;
+    background: var(--color-bg);
+}
+
+.landing-section-title {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 40px;
+    color: var(--color-text);
+}
+
+.landing-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.landing-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+}
+
+.landing-card-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.landing-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: var(--color-text);
+}
+
+.landing-card p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Secondary features */
+.landing-secondary {
+    padding: 64px 0;
+}
+
+.landing-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 480px;
+}
+
+.landing-checklist li {
+    padding: 10px 0 10px 28px;
+    position: relative;
+    font-size: 15px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.landing-checklist li:last-child {
+    border-bottom: none;
+}
+
+.landing-checklist li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    color: var(--color-success);
+    font-weight: 700;
+}
+
+/* Footer */
+.landing-footer {
+    margin-top: auto;
+    padding: 40px 0;
+    text-align: center;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.landing-footer p {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.landing-footer-copy {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
+/* Landing page responsive */
+@media (max-width: 640px) {
+    .landing-hero {
+        padding: 48px 0 40px;
+    }
+
+    .landing-hero-title {
+        font-size: 28px;
+    }
+
+    .landing-hero-subtitle {
+        font-size: 16px;
+    }
+
+    .landing-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-features,
+    .landing-secondary {
+        padding: 40px 0;
+    }
+}
+
+/* =============================================
+   Dashboard Stats & Sections
+   ============================================= */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-card-warning {
+    border-color: var(--color-warning);
+    background: #fffbeb;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.stat-card-warning .stat-number {
+    color: var(--color-warning);
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.dashboard-section {
+    margin-bottom: 20px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.badge-doc {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-runbook {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+@media (max-width: 640px) {
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+}

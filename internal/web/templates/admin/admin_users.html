@@ -1,0 +1,82 @@
+{{define "admin_users.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/admin/users">Admin</a>
+                    <span class="separator">/</span>
+                    Users
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>⚙️ Users</h2>
+                        <a href="/admin/users/new" class="btn btn-primary">Add User</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    {{if .Content}}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Last Login</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Content}}
+                            <tr>
+                                <td>{{.Name}}</td>
+                                <td>{{.Email}}</td>
+                                <td><span class="badge badge-{{.Role}}">{{.Role}}</span></td>
+                                <td>{{timeTag .CreatedAt "Jan 2, 2006"}}</td>
+                                <td>{{if .LastLoginAt}}{{timeTag (deref .LastLoginAt) "Jan 2, 2006 15:04"}}{{else}}<span class="text-muted">Never</span>{{end}}</td>
+                                <td>
+                                    <a href="/admin/users/{{.ID}}/edit" class="btn btn-secondary btn-sm">Edit</a>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    {{else}}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>No users yet</h3>
+                        <p>Add the first user to this tenant.</p>
+                        <a href="/admin/users/new" class="btn btn-primary">Add User</a>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div style="margin-top:1rem">
+                    <a href="/admin/audit" class="btn btn-secondary btn-sm">View Audit Log</a>
+                    <a href="/admin/settings" class="btn btn-secondary btn-sm">Tenant Settings</a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

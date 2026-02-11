@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/justinas/nosurf"
 
@@ -104,11 +105,15 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	r.Post("/login", s.handleLogin)
 	r.Post("/logout", s.handleLogout)
 
+	// Home: public landing or authenticated dashboard
+	r.Group(func(r chi.Router) {
+		r.Use(s.authMw.LoadSession)
+		r.Get("/", s.handleHome)
+	})
+
 	// Protected routes
 	r.Group(func(r chi.Router) {
 		r.Use(s.authMw.RequireAuth)
-
-		r.Get("/", s.handleDashboard)
 
 		// Search
 		r.Get("/search", s.handleSearch)
@@ -163,6 +168,23 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 			r.Get("/{id}/edit", s.handleClientEdit)
 			r.Post("/{id}", s.handleClientUpdate)
 		})
+
+		// Admin
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(s.authMw.RequireRole("admin"))
+
+			r.Get("/users", s.handleAdminUsers)
+			r.Get("/users/new", s.handleAdminUserNew)
+			r.Post("/users", s.handleAdminUserCreate)
+			r.Get("/users/{id}/edit", s.handleAdminUserEdit)
+			r.Post("/users/{id}", s.handleAdminUserUpdate)
+			r.Post("/users/{id}/delete", s.handleAdminUserDelete)
+
+			r.Get("/audit", s.handleAdminAudit)
+
+			r.Get("/settings", s.handleAdminSettings)
+			r.Post("/settings", s.handleAdminSettingsUpdate)
+		})
 	})
 
 	return r
@@ -185,6 +207,27 @@ func (s *Server) loadTemplates() error {
 			}
 			return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 		},
+		"deref": func(v any) any {
+			switch val := v.(type) {
+			case *string:
+				if val != nil {
+					return *val
+				}
+				return ""
+			case *time.Time:
+				if val != nil {
+					return *val
+				}
+				return time.Time{}
+			case *uuid.UUID:
+				if val != nil {
+					return val.String()
+				}
+				return ""
+			default:
+				return v
+			}
+		},
 		"timeTag": func(t time.Time, format string) template.HTML {
 			iso := t.Format(time.RFC3339)
 			display := t.Format(format)
@@ -200,6 +243,8 @@ func (s *Server) loadTemplates() error {
 		"templates/search/*.html",
 		"templates/runbooks/*.html",
 		"templates/attachments/*.html",
+		"templates/admin/*.html",
+		"templates/landing.html",
 	)
 	if err != nil {
 		return err
