@@ -255,10 +255,12 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard data for authenticated users
 type DashboardData struct {
-	TotalDocs      int
-	TotalRunbooks  int
-	OverdueCount   int
-	RecentDocs     []docs.Document
+	TotalDocs       int
+	TotalRunbooks   int
+	OverdueCount    int
+	StaleCount      int
+	UnownedCount    int
+	RecentDocs      []docs.Document
 	OverdueRunbooks []runbooks.RunbookWithStatus
 }
 
@@ -300,6 +302,15 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	} else {
 		dd.OverdueRunbooks = overdue
 		dd.OverdueCount = len(overdue)
+	}
+
+	// Doc health stats
+	healthSummary, err := s.docs.GetHealthSummary(ctx, tenant.ID, 90)
+	if err != nil {
+		slog.Error("dashboard: failed to get health summary", "error", err)
+	} else {
+		dd.StaleCount = len(healthSummary.StaleDocs)
+		dd.UnownedCount = len(healthSummary.UnownedDocs)
 	}
 
 	data := s.newPageData(r)

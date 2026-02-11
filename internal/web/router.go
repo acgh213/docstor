@@ -123,12 +123,16 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 
 		// Documents
 		r.Get("/docs", s.handleDocsHomeV2)
+		r.Get("/docs/health", s.handleDocHealth)
 		r.Get("/docs/new", s.handleDocNew)
 		r.Post("/docs/new", s.handleDocCreate)
 		r.Post("/preview", s.handlePreview)
 		// Document operations by ID
 		r.Get("/docs/id/{id}/edit", s.handleDocEditByID)
 		r.Post("/docs/id/{id}/save", s.handleDocSaveByID)
+		r.Get("/docs/id/{id}/rename", s.handleDocRenameForm)
+		r.Post("/docs/id/{id}/rename", s.handleDocRename)
+		r.Post("/docs/id/{id}/delete", s.handleDocDelete)
 		r.Get("/docs/id/{id}/history", s.handleDocHistoryByID)
 		r.Get("/docs/id/{id}/diff", s.handleDocDiffByID)
 		r.Get("/docs/id/{id}/revision/{revID}", s.handleDocRevisionByID)

@@ -1786,3 +1786,36 @@ tr:hover td {
         grid-template-columns: 1fr;
     }
 }
+
+/* =============================================
+   Doc Health Dashboard
+   ============================================= */
+
+.health-stats {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.stat-card-success {
+    border-color: var(--color-success);
+    background: #ecfdf5;
+}
+
+.stat-card-success .stat-number {
+    color: var(--color-success);
+}
+
+@media (max-width: 768px) {
+    .health-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dashboard-stats[style*="grid-template-columns: repeat(5"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .health-stats {
+        grid-template-columns: 1fr;
+    }
+}
+

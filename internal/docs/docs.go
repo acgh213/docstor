@@ -506,6 +506,58 @@ func (r *Repository) Revert(ctx context.Context, tenantID, docID, revisionID uui
 	return r.GetByID(ctx, tenantID, docID)
 }
 
+// Rename updates the path and title of a document within a transaction.
+// Returns ErrPathConflict if the new path is already taken.
+func (r *Repository) Rename(ctx context.Context, tenantID, docID uuid.UUID, newPath, newTitle string, renamedBy uuid.UUID) (*Document, error) {
+	newPath = normalizePath(newPath)
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Lock the document row
+	var existingID uuid.UUID
+	err = tx.QueryRow(ctx, `SELECT id FROM documents WHERE tenant_id = $1 AND id = $2 FOR UPDATE`,
+		tenantID, docID).Scan(&existingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query document: %w", err)
+	}
+
+	// Update path and title
+	_, err = tx.Exec(ctx, `UPDATE documents SET path = $1, title = $2, updated_at = NOW() WHERE tenant_id = $3 AND id = $4`,
+		newPath, newTitle, tenantID, docID)
+	if err != nil {
+		if strings.Contains(err.Error(), "unique") {
+			return nil, ErrPathConflict
+		}
+		return nil, fmt.Errorf("update document: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return r.GetByID(ctx, tenantID, docID)
+}
+
+// Delete removes a document and its revisions (via CASCADE).
+func (r *Repository) Delete(ctx context.Context, tenantID, docID uuid.UUID) error {
+	result, err := r.db.Exec(ctx, `DELETE FROM documents WHERE tenant_id = $1 AND id = $2`,
+		tenantID, docID)
+	if err != nil {
+		return fmt.Errorf("delete document: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func normalizePath(path string) string {
 	path = strings.TrimPrefix(path, "/")
 	path = strings.TrimSuffix(path, "/")
@@ -611,4 +663,116 @@ func (r *Repository) Search(ctx context.Context, tenantID uuid.UUID, query strin
 	}
 
 	return results, nil
+}
+
+// DocHealthSummary contains health metrics for documents in a tenant
+type DocHealthSummary struct {
+	StaleDocs    []Document // updated_at older than staleDays
+	UnownedDocs  []Document // owner_user_id IS NULL
+	TotalDocs    int
+	HealthyCount int // docs updated within staleDays AND have owner
+}
+
+// GetHealthSummary returns document health metrics for a tenant
+func (r *Repository) GetHealthSummary(ctx context.Context, tenantID uuid.UUID, staleDays int) (*DocHealthSummary, error) {
+	summary := &DocHealthSummary{}
+
+	// Count total docs
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM documents WHERE tenant_id = $1`, tenantID).Scan(&summary.TotalDocs)
+	if err != nil {
+		return nil, fmt.Errorf("count total docs: %w", err)
+	}
+
+	// Count healthy docs: updated within staleDays AND have an owner
+	err = r.db.QueryRow(ctx, `
+		SELECT COUNT(*) FROM documents
+		WHERE tenant_id = $1
+		  AND updated_at >= NOW() - make_interval(days => $2)
+		  AND owner_user_id IS NOT NULL
+	`, tenantID, staleDays).Scan(&summary.HealthyCount)
+	if err != nil {
+		return nil, fmt.Errorf("count healthy docs: %w", err)
+	}
+
+	// Stale docs: updated_at older than staleDays
+	staleRows, err := r.db.Query(ctx, `
+		SELECT d.id, d.tenant_id, d.client_id, d.path, d.title, d.doc_type, d.sensitivity,
+		       d.owner_user_id, d.metadata_json, d.current_revision_id, d.created_by, d.created_at, d.updated_at,
+		       c.id, c.name, c.code,
+		       u.id, u.name, u.email
+		FROM documents d
+		LEFT JOIN clients c ON d.client_id = c.id
+		LEFT JOIN users u ON d.owner_user_id = u.id
+		WHERE d.tenant_id = $1
+		  AND d.updated_at < NOW() - make_interval(days => $2)
+		ORDER BY d.updated_at ASC
+		LIMIT 50
+	`, tenantID, staleDays)
+	if err != nil {
+		return nil, fmt.Errorf("query stale docs: %w", err)
+	}
+	defer staleRows.Close()
+
+	summary.StaleDocs, err = scanDocumentRows(staleRows)
+	if err != nil {
+		return nil, fmt.Errorf("scan stale docs: %w", err)
+	}
+
+	// Unowned docs: owner_user_id IS NULL
+	unownedRows, err := r.db.Query(ctx, `
+		SELECT d.id, d.tenant_id, d.client_id, d.path, d.title, d.doc_type, d.sensitivity,
+		       d.owner_user_id, d.metadata_json, d.current_revision_id, d.created_by, d.created_at, d.updated_at,
+		       c.id, c.name, c.code,
+		       u.id, u.name, u.email
+		FROM documents d
+		LEFT JOIN clients c ON d.client_id = c.id
+		LEFT JOIN users u ON d.owner_user_id = u.id
+		WHERE d.tenant_id = $1
+		  AND d.owner_user_id IS NULL
+		ORDER BY d.updated_at DESC
+		LIMIT 50
+	`, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("query unowned docs: %w", err)
+	}
+	defer unownedRows.Close()
+
+	summary.UnownedDocs, err = scanDocumentRows(unownedRows)
+	if err != nil {
+		return nil, fmt.Errorf("scan unowned docs: %w", err)
+	}
+
+	return summary, nil
+}
+
+// scanDocumentRows scans rows from a document query with joined client and owner info
+func scanDocumentRows(rows pgx.Rows) ([]Document, error) {
+	var documents []Document
+	for rows.Next() {
+		var d Document
+		var clientID, clientName, clientCode *string
+		var ownerID, ownerName, ownerEmail *string
+
+		err := rows.Scan(
+			&d.ID, &d.TenantID, &d.ClientID, &d.Path, &d.Title, &d.DocType, &d.Sensitivity,
+			&d.OwnerUserID, &d.MetadataJSON, &d.CurrentRevisionID, &d.CreatedBy, &d.CreatedAt, &d.UpdatedAt,
+			&clientID, &clientName, &clientCode,
+			&ownerID, &ownerName, &ownerEmail,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if clientID != nil {
+			cid, _ := uuid.Parse(*clientID)
+			d.Client = &ClientInfo{ID: cid, Name: *clientName, Code: *clientCode}
+		}
+		if ownerID != nil {
+			oid, _ := uuid.Parse(*ownerID)
+			d.Owner = &UserInfo{ID: oid, Name: *ownerName, Email: *ownerEmail}
+		}
+
+		documents = append(documents, d)
+	}
+	return documents, nil
 }

@@ -639,3 +639,147 @@ func (s *Server) handleDocRevisionByID(w http.ResponseWriter, r *http.Request) {
 
 	s.templates.ExecuteTemplate(w, "doc_revision.html", pageData)
 }
+
+func (s *Server) handleDocRenameForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	membership := auth.MembershipFromContext(ctx)
+
+	if !membership.IsEditor() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
+		return
+	}
+
+	pageData := DocPageData{
+		PageData: s.newPageData(r),
+		Document: doc,
+	}
+	pageData.Title = "Rename " + doc.Title + " - Docstor"
+
+	s.templates.ExecuteTemplate(w, "doc_rename.html", pageData)
+}
+
+func (s *Server) handleDocRename(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	membership := auth.MembershipFromContext(ctx)
+	tenant := auth.TenantFromContext(ctx)
+	user := auth.UserFromContext(ctx)
+
+	if !membership.IsEditor() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form", http.StatusBadRequest)
+		return
+	}
+
+	newPath := strings.TrimSpace(r.FormValue("new_path"))
+	newTitle := strings.TrimSpace(r.FormValue("new_title"))
+
+	if newPath == "" || newTitle == "" {
+		pageData := DocPageData{
+			PageData: s.newPageData(r),
+			Document: doc,
+		}
+		pageData.Title = "Rename " + doc.Title + " - Docstor"
+		pageData.Error = "Path and title are required"
+		s.templates.ExecuteTemplate(w, "doc_rename.html", pageData)
+		return
+	}
+
+	oldPath := doc.Path
+	oldTitle := doc.Title
+
+	updated, err := s.docs.Rename(ctx, tenant.ID, doc.ID, newPath, newTitle, user.ID)
+	if errors.Is(err, docs.ErrPathConflict) {
+		pageData := DocPageData{
+			PageData: s.newPageData(r),
+			Document: doc,
+		}
+		// Show the user's attempted values so they can adjust
+		pageData.Document.Path = newPath
+		pageData.Document.Title = newTitle
+		pageData.Title = "Rename " + oldTitle + " - Docstor"
+		pageData.Error = "A document with this path already exists"
+		s.templates.ExecuteTemplate(w, "doc_rename.html", pageData)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to rename document", "error", err)
+		http.Error(w, "Failed to rename document", http.StatusInternalServerError)
+		return
+	}
+
+	// Audit log
+	_ = s.audit.Log(ctx, audit.Entry{
+		TenantID:    tenant.ID,
+		ActorUserID: &user.ID,
+		Action:      audit.ActionDocMove,
+		TargetType:  audit.TargetDocument,
+		TargetID:    &updated.ID,
+		IP:          r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Metadata: map[string]any{
+			"old_path":  oldPath,
+			"new_path":  updated.Path,
+			"old_title": oldTitle,
+			"new_title": updated.Title,
+		},
+	})
+
+	setFlashSuccess(w, "Document renamed successfully")
+	http.Redirect(w, r, "/docs/"+updated.Path, http.StatusSeeOther)
+}
+
+func (s *Server) handleDocDelete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	membership := auth.MembershipFromContext(ctx)
+	tenant := auth.TenantFromContext(ctx)
+	user := auth.UserFromContext(ctx)
+
+	if !membership.IsEditor() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	doc := s.getDocAndCheckAccess(w, r)
+	if doc == nil {
+		return
+	}
+
+	docID := doc.ID
+	docPath := doc.Path
+	docTitle := doc.Title
+
+	if err := s.docs.Delete(ctx, tenant.ID, docID); err != nil {
+		slog.Error("failed to delete document", "error", err)
+		http.Error(w, "Failed to delete document", http.StatusInternalServerError)
+		return
+	}
+
+	// Audit log
+	_ = s.audit.Log(ctx, audit.Entry{
+		TenantID:    tenant.ID,
+		ActorUserID: &user.ID,
+		Action:      audit.ActionDocDelete,
+		TargetType:  audit.TargetDocument,
+		TargetID:    &docID,
+		IP:          r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Metadata:    map[string]any{"path": docPath, "title": docTitle},
+	})
+
+	setFlashSuccess(w, "Document \"" + docTitle + "\" deleted")
+	http.Redirect(w, r, "/docs", http.StatusSeeOther)
+}

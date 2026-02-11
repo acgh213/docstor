@@ -25,7 +25,7 @@
                 </div>
 
                 {{with .Content}}
-                <div class="dashboard-stats">
+                <div class="dashboard-stats" style="grid-template-columns: repeat(5, 1fr);">
                     <div class="stat-card">
                         <div class="stat-number">{{.TotalDocs}}</div>
                         <div class="stat-label">Total Documents</div>
@@ -37,6 +37,14 @@
                     <div class="stat-card {{if gt .OverdueCount 0}}stat-card-warning{{end}}">
                         <div class="stat-number">{{.OverdueCount}}</div>
                         <div class="stat-label">Overdue Runbooks</div>
+                    </div>
+                    <div class="stat-card {{if gt .StaleCount 0}}stat-card-warning{{end}}">
+                        <div class="stat-number">{{.StaleCount}}</div>
+                        <div class="stat-label">Stale Docs</div>
+                    </div>
+                    <div class="stat-card {{if gt .UnownedCount 0}}stat-card-warning{{end}}">
+                        <div class="stat-number">{{.UnownedCount}}</div>
+                        <div class="stat-label">Unowned Docs</div>
                     </div>
                 </div>
 
@@ -96,6 +104,18 @@
                 </section>
                 {{end}}
 
+                {{if or (gt .StaleCount 0) (gt .UnownedCount 0)}}
+                <section class="card dashboard-section">
+                    <h3>&#x1F4CA; Doc Health</h3>
+                    <p class="text-muted" style="margin-top: 0; margin-bottom: 12px;">
+                        {{if gt .StaleCount 0}}<span class="badge badge-warning">{{.StaleCount}} stale</span> {{end}}
+                        {{if gt .UnownedCount 0}}<span class="badge badge-warning">{{.UnownedCount}} unowned</span> {{end}}
+                        &mdash; documents need attention.
+                    </p>
+                    <a href="/docs/health" class="btn btn-secondary btn-sm">View Doc Health Dashboard &rarr;</a>
+                </section>
+                {{end}}
+
                 {{end}}
 
                 <section class="card dashboard-section">
@@ -105,6 +125,7 @@
                         <a href="/runbooks" class="btn btn-secondary">Runbooks</a>
                         <a href="/clients" class="btn btn-secondary">Clients</a>
                         <a href="/evidence-bundles" class="btn btn-secondary">Evidence Bundles</a>
+                        <a href="/docs/health" class="btn btn-secondary">Doc Health</a>
                     </div>
                 </section>
             </div>

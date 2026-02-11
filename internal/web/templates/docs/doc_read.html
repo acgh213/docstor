@@ -34,6 +34,15 @@
                                     {{end}}
                                     <a href="/docs/id/{{.Document.ID}}/history" class="btn btn-secondary">History</a>
                                     <a href="/docs/id/{{.Document.ID}}/attachments" class="btn btn-secondary">Attachments</a>
+                                    {{if $.Membership.IsEditor}}
+                                    <a href="/docs/id/{{.Document.ID}}/rename" class="btn btn-secondary">Rename</a>
+                                    <form action="/docs/id/{{.Document.ID}}/delete" method="POST" style="display: inline;">
+                                        {{$.CSRFField}}
+                                        <button type="submit" class="btn btn-danger"
+                                            data-confirm="This will permanently delete this document and all its revisions. This cannot be undone."
+                                            data-confirm-title="Delete Document?">Delete</button>
+                                    </form>
+                                    {{end}}
                                 </div>
                             </div>
                             <div class="doc-meta">

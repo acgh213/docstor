@@ -1,0 +1,63 @@
+{{define "doc_rename.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+
+                <nav class="breadcrumbs">
+                    <a href="/docs">Docs</a>
+                    <span class="separator">/</span>
+                    <a href="/docs/{{.Document.Path}}">{{.Document.Title}}</a>
+                    <span class="separator">/</span>
+                    Rename
+                </nav>
+
+                <div class="page-header">
+                    <div class="page-header-row">
+                        <h2>Rename: {{.Document.Title}}</h2>
+                        <div class="doc-actions">
+                            <a href="/docs/{{.Document.Path}}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <form method="POST" action="/docs/id/{{.Document.ID}}/rename" class="form">
+                        {{.CSRFField}}
+
+                        <div class="form-group">
+                            <label for="new_path">Path</label>
+                            <input type="text" id="new_path" name="new_path" class="form-control" value="{{.Document.Path}}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new_title">Title</label>
+                            <input type="text" id="new_title" name="new_title" class="form-control" value="{{.Document.Title}}" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Rename</button>
+                            <a href="/docs/{{.Document.Path}}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}
