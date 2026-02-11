@@ -15,12 +15,13 @@
 | Landing | Public landing page + improved dashboard | Stats, recent docs, overdue |
 | Doc Ops | Rename/move/delete documents | Full CRUD complete |
 | 12 | Doc Health Dashboard | Stale, unowned, health % |
+| 9 | Templates + Checklists | Templates CRUD, use-template, checklists, instances, HTMX toggle |
 
 ### 🚧 Remaining
 
 | Phase | What | Est. | Schema needed |
 |-------|------|------|---------------|
-| 9 | Templates + Checklists | 3–4h | templates, checklists, checklist_items, checklist_instances, checklist_instance_items |
+| ~~9~~ | ~~Templates + Checklists~~ | ✅ Done | ~~templates, checklists, checklist_items, checklist_instances, checklist_instance_items~~ |
 | 10 | CMDB-lite + Live Blocks | 4–6h | systems, vendors, contacts, circuits |
 | 11 | Known Issues + Incidents | 3–4h | known_issues, incidents, incident_events |
 | Polish | Drag-drop upload, folder tree, image preview, metadata edit | 2–3h | None |
