@@ -408,10 +408,12 @@ func (r *Repository) ListInstances(ctx context.Context, tenantID uuid.UUID, stat
 		       u.id, u.name, u.email,
 		       c.name,
 		       (SELECT COUNT(*) FROM checklist_instance_items cii WHERE cii.instance_id = ci.id) AS total,
-		       (SELECT COUNT(*) FROM checklist_instance_items cii WHERE cii.instance_id = ci.id AND cii.done = TRUE) AS completed
+		       (SELECT COUNT(*) FROM checklist_instance_items cii WHERE cii.instance_id = ci.id AND cii.done = TRUE) AS completed,
+		       d.title
 		FROM checklist_instances ci
 		JOIN users u ON ci.created_by = u.id
 		JOIN checklists c ON ci.checklist_id = c.id
+		LEFT JOIN documents d ON ci.linked_type = 'document' AND ci.linked_id = d.id AND d.tenant_id = ci.tenant_id
 		WHERE ci.tenant_id = $1
 	`
 	args := []any{tenantID}
@@ -432,22 +434,21 @@ func (r *Repository) ListInstances(ctx context.Context, tenantID uuid.UUID, stat
 		var inst Instance
 		var author UserInfo
 		var checklistName string
+		var linkedTitle *string
 		if err := rows.Scan(
 			&inst.ID, &inst.TenantID, &inst.ChecklistID, &inst.LinkedType, &inst.LinkedID,
 			&inst.Status, &inst.CreatedBy, &inst.CreatedAt, &inst.CompletedAt,
 			&author.ID, &author.Name, &author.Email,
 			&checklistName,
 			&inst.TotalCount, &inst.CompletedCount,
+			&linkedTitle,
 		); err != nil {
 			return nil, fmt.Errorf("scan instance: %w", err)
 		}
 		inst.Author = &author
 		inst.Checklist = &Checklist{ID: inst.ChecklistID, Name: checklistName}
-
-		// Load linked doc title
-		if inst.LinkedType != nil && *inst.LinkedType == "document" && inst.LinkedID != nil {
-			_ = r.db.QueryRow(ctx, `SELECT title FROM documents WHERE tenant_id = $1 AND id = $2`,
-				tenantID, *inst.LinkedID).Scan(&inst.LinkedTitle)
+		if linkedTitle != nil {
+			inst.LinkedTitle = *linkedTitle
 		}
 
 		instances = append(instances, inst)
