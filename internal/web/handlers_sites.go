@@ -166,14 +166,10 @@ func (s *Server) handleSiteView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Load related CMDB items for this site
-	systems, _ := s.cmdb.ListSystems(ctx, tenant.ID, nil)
+	systems, _ := s.cmdb.ListSystemsBySite(ctx, tenant.ID, id)
 	vendors, _ := s.cmdb.ListVendors(ctx, tenant.ID, &site.ClientID)
-	contacts, _ := s.cmdb.ListContacts(ctx, tenant.ID, nil)
-	circuits, _ := s.cmdb.ListCircuits(ctx, tenant.ID, nil)
-
-	// Filter by site_id (systems, contacts, circuits have site_id now)
-	// For now, show all items for this client since site_id filtering
-	// needs the CMDB repos updated. We'll show the client's items.
+	contacts, _ := s.cmdb.ListContactsBySite(ctx, tenant.ID, id)
+	circuits, _ := s.cmdb.ListCircuitsBySite(ctx, tenant.ID, id)
 
 	data := s.newPageData(r)
 	data.Title = site.Name + " - Docstor"

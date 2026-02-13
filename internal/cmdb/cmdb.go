@@ -19,6 +19,7 @@ type System struct {
 	ID          uuid.UUID
 	TenantID    uuid.UUID
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	SystemType  string
 	Name        string
 	FQDN        string
@@ -49,6 +50,7 @@ type Contact struct {
 	ID        uuid.UUID
 	TenantID  uuid.UUID
 	ClientID  *uuid.UUID
+	SiteID    *uuid.UUID
 	Name      string
 	Role      string
 	Phone     string
@@ -61,6 +63,7 @@ type Circuit struct {
 	ID          uuid.UUID
 	TenantID    uuid.UUID
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	Provider    string
 	CircuitID   string
 	CircuitType string
@@ -92,7 +95,7 @@ func ns(p *string) string {
 // ===================== SYSTEMS =====================
 
 func (r *Repository) ListSystems(ctx context.Context, tenantID uuid.UUID, clientID *uuid.UUID) ([]System, error) {
-	query := `SELECT id, tenant_id, client_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at FROM systems WHERE tenant_id = $1`
+	query := `SELECT id, tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at FROM systems WHERE tenant_id = $1`
 	args := []any{tenantID}
 	if clientID != nil {
 		query += " AND client_id = $2"
@@ -110,7 +113,32 @@ func (r *Repository) ListSystems(ctx context.Context, tenantID uuid.UUID, client
 	for rows.Next() {
 		var s System
 		var fqdn, ip, os, notes *string
-		if err := rows.Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SystemType, &s.Name, &fqdn, &ip, &os, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SiteID, &s.SystemType, &s.Name, &fqdn, &ip, &os, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan system: %w", err)
+		}
+		s.FQDN = ns(fqdn)
+		s.IP = ns(ip)
+		s.OS = ns(os)
+		s.Notes = ns(notes)
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+// ListSystemsBySite returns systems for a specific site.
+func (r *Repository) ListSystemsBySite(ctx context.Context, tenantID, siteID uuid.UUID) ([]System, error) {
+	query := `SELECT id, tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at FROM systems WHERE tenant_id = $1 AND site_id = $2 ORDER BY name ASC`
+	rows, err := r.db.Query(ctx, query, tenantID, siteID)
+	if err != nil {
+		return nil, fmt.Errorf("query systems by site: %w", err)
+	}
+	defer rows.Close()
+
+	var out []System
+	for rows.Next() {
+		var s System
+		var fqdn, ip, os, notes *string
+		if err := rows.Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SiteID, &s.SystemType, &s.Name, &fqdn, &ip, &os, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan system: %w", err)
 		}
 		s.FQDN = ns(fqdn)
@@ -125,7 +153,7 @@ func (r *Repository) ListSystems(ctx context.Context, tenantID uuid.UUID, client
 func (r *Repository) GetSystem(ctx context.Context, tenantID, id uuid.UUID) (*System, error) {
 	var s System
 	var fqdn, ip, osVal, notes *string
-	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at FROM systems WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
+	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at FROM systems WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SiteID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -142,6 +170,7 @@ func (r *Repository) GetSystem(ctx context.Context, tenantID, id uuid.UUID) (*Sy
 type CreateSystemInput struct {
 	TenantID    uuid.UUID
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	SystemType  string
 	Name        string
 	FQDN        string
@@ -167,9 +196,9 @@ func (r *Repository) CreateSystem(ctx context.Context, in CreateSystemInput) (*S
 	if in.Notes != "" {
 		notes = &in.Notes
 	}
-	err := r.db.QueryRow(ctx, `INSERT INTO systems (tenant_id, client_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, tenant_id, client_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at`,
-		in.TenantID, in.ClientID, in.SystemType, in.Name, fqdn, ip, osVal, in.Environment, notes, in.OwnerUserID,
-	).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
+	err := r.db.QueryRow(ctx, `INSERT INTO systems (tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at`,
+		in.TenantID, in.ClientID, in.SiteID, in.SystemType, in.Name, fqdn, ip, osVal, in.Environment, notes, in.OwnerUserID,
+	).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SiteID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create system: %w", err)
 	}
@@ -182,6 +211,7 @@ func (r *Repository) CreateSystem(ctx context.Context, in CreateSystemInput) (*S
 
 type UpdateSystemInput struct {
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	SystemType  string
 	Name        string
 	FQDN        string
@@ -207,9 +237,9 @@ func (r *Repository) UpdateSystem(ctx context.Context, tenantID, id uuid.UUID, i
 	if in.Notes != "" {
 		notes = &in.Notes
 	}
-	err := r.db.QueryRow(ctx, `UPDATE systems SET client_id=$3, system_type=$4, name=$5, fqdn=$6, ip=$7, os=$8, environment=$9, notes=$10, owner_user_id=$11, updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at`,
-		tenantID, id, in.ClientID, in.SystemType, in.Name, fqdn, ip, osVal, in.Environment, notes, in.OwnerUserID,
-	).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
+	err := r.db.QueryRow(ctx, `UPDATE systems SET client_id=$3, site_id=$4, system_type=$5, name=$6, fqdn=$7, ip=$8, os=$9, environment=$10, notes=$11, owner_user_id=$12, updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, site_id, system_type, name, fqdn, ip, os, environment, notes, owner_user_id, created_at, updated_at`,
+		tenantID, id, in.ClientID, in.SiteID, in.SystemType, in.Name, fqdn, ip, osVal, in.Environment, notes, in.OwnerUserID,
+	).Scan(&s.ID, &s.TenantID, &s.ClientID, &s.SiteID, &s.SystemType, &s.Name, &fqdn, &ip, &osVal, &s.Environment, &notes, &s.OwnerUserID, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -370,7 +400,7 @@ func (r *Repository) DeleteVendor(ctx context.Context, tenantID, id uuid.UUID) e
 // ===================== CONTACTS =====================
 
 func (r *Repository) ListContacts(ctx context.Context, tenantID uuid.UUID, clientID *uuid.UUID) ([]Contact, error) {
-	query := `SELECT id, tenant_id, client_id, name, role, phone, email, notes, created_at FROM contacts WHERE tenant_id = $1`
+	query := `SELECT id, tenant_id, client_id, site_id, name, role, phone, email, notes, created_at FROM contacts WHERE tenant_id = $1`
 	args := []any{tenantID}
 	if clientID != nil {
 		query += " AND client_id = $2"
@@ -388,7 +418,32 @@ func (r *Repository) ListContacts(ctx context.Context, tenantID uuid.UUID, clien
 	for rows.Next() {
 		var c Contact
 		var role, phone, email, notes *string
-		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan contact: %w", err)
+		}
+		c.Role = ns(role)
+		c.Phone = ns(phone)
+		c.Email = ns(email)
+		c.Notes = ns(notes)
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// ListContactsBySite returns contacts for a specific site.
+func (r *Repository) ListContactsBySite(ctx context.Context, tenantID, siteID uuid.UUID) ([]Contact, error) {
+	query := `SELECT id, tenant_id, client_id, site_id, name, role, phone, email, notes, created_at FROM contacts WHERE tenant_id = $1 AND site_id = $2 ORDER BY name ASC`
+	rows, err := r.db.Query(ctx, query, tenantID, siteID)
+	if err != nil {
+		return nil, fmt.Errorf("query contacts by site: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Contact
+	for rows.Next() {
+		var c Contact
+		var role, phone, email, notes *string
+		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan contact: %w", err)
 		}
 		c.Role = ns(role)
@@ -403,7 +458,7 @@ func (r *Repository) ListContacts(ctx context.Context, tenantID uuid.UUID, clien
 func (r *Repository) GetContact(ctx context.Context, tenantID, id uuid.UUID) (*Contact, error) {
 	var c Contact
 	var role, phone, email, notes *string
-	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, name, role, phone, email, notes, created_at FROM contacts WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
+	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, site_id, name, role, phone, email, notes, created_at FROM contacts WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -420,6 +475,7 @@ func (r *Repository) GetContact(ctx context.Context, tenantID, id uuid.UUID) (*C
 type CreateContactInput struct {
 	TenantID uuid.UUID
 	ClientID *uuid.UUID
+	SiteID   *uuid.UUID
 	Name     string
 	Role     string
 	Phone    string
@@ -434,9 +490,9 @@ func (r *Repository) CreateContact(ctx context.Context, in CreateContactInput) (
 	if in.Phone != "" { phone = &in.Phone }
 	if in.Email != "" { email = &in.Email }
 	if in.Notes != "" { notes = &in.Notes }
-	err := r.db.QueryRow(ctx, `INSERT INTO contacts (tenant_id, client_id, name, role, phone, email, notes) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, tenant_id, client_id, name, role, phone, email, notes, created_at`,
-		in.TenantID, in.ClientID, in.Name, role, phone, email, notes,
-	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
+	err := r.db.QueryRow(ctx, `INSERT INTO contacts (tenant_id, client_id, site_id, name, role, phone, email, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, tenant_id, client_id, site_id, name, role, phone, email, notes, created_at`,
+		in.TenantID, in.ClientID, in.SiteID, in.Name, role, phone, email, notes,
+	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create contact: %w", err)
 	}
@@ -449,6 +505,7 @@ func (r *Repository) CreateContact(ctx context.Context, in CreateContactInput) (
 
 type UpdateContactInput struct {
 	ClientID *uuid.UUID
+	SiteID   *uuid.UUID
 	Name     string
 	Role     string
 	Phone    string
@@ -463,9 +520,9 @@ func (r *Repository) UpdateContact(ctx context.Context, tenantID, id uuid.UUID, 
 	if in.Phone != "" { phone = &in.Phone }
 	if in.Email != "" { email = &in.Email }
 	if in.Notes != "" { notes = &in.Notes }
-	err := r.db.QueryRow(ctx, `UPDATE contacts SET client_id=$3, name=$4, role=$5, phone=$6, email=$7, notes=$8 WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, name, role, phone, email, notes, created_at`,
-		tenantID, id, in.ClientID, in.Name, role, phone, email, notes,
-	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
+	err := r.db.QueryRow(ctx, `UPDATE contacts SET client_id=$3, site_id=$4, name=$5, role=$6, phone=$7, email=$8, notes=$9 WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, site_id, name, role, phone, email, notes, created_at`,
+		tenantID, id, in.ClientID, in.SiteID, in.Name, role, phone, email, notes,
+	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Name, &role, &phone, &email, &notes, &c.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -493,7 +550,7 @@ func (r *Repository) DeleteContact(ctx context.Context, tenantID, id uuid.UUID) 
 // ===================== CIRCUITS =====================
 
 func (r *Repository) ListCircuits(ctx context.Context, tenantID uuid.UUID, clientID *uuid.UUID) ([]Circuit, error) {
-	query := `SELECT id, tenant_id, client_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at FROM circuits WHERE tenant_id = $1`
+	query := `SELECT id, tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at FROM circuits WHERE tenant_id = $1`
 	args := []any{tenantID}
 	if clientID != nil {
 		query += " AND client_id = $2"
@@ -511,7 +568,31 @@ func (r *Repository) ListCircuits(ctx context.Context, tenantID uuid.UUID, clien
 	for rows.Next() {
 		var c Circuit
 		var wanIP, speed, notes *string
-		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan circuit: %w", err)
+		}
+		c.WanIP = ns(wanIP)
+		c.Speed = ns(speed)
+		c.Notes = ns(notes)
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// ListCircuitsBySite returns circuits for a specific site.
+func (r *Repository) ListCircuitsBySite(ctx context.Context, tenantID, siteID uuid.UUID) ([]Circuit, error) {
+	query := `SELECT id, tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at FROM circuits WHERE tenant_id = $1 AND site_id = $2 ORDER BY provider ASC, circuit_id ASC`
+	rows, err := r.db.Query(ctx, query, tenantID, siteID)
+	if err != nil {
+		return nil, fmt.Errorf("query circuits by site: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Circuit
+	for rows.Next() {
+		var c Circuit
+		var wanIP, speed, notes *string
+		if err := rows.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan circuit: %w", err)
 		}
 		c.WanIP = ns(wanIP)
@@ -525,7 +606,7 @@ func (r *Repository) ListCircuits(ctx context.Context, tenantID uuid.UUID, clien
 func (r *Repository) GetCircuit(ctx context.Context, tenantID, id uuid.UUID) (*Circuit, error) {
 	var c Circuit
 	var wanIP, speed, notes *string
-	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at FROM circuits WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
+	err := r.db.QueryRow(ctx, `SELECT id, tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at FROM circuits WHERE tenant_id = $1 AND id = $2`, tenantID, id).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -541,6 +622,7 @@ func (r *Repository) GetCircuit(ctx context.Context, tenantID, id uuid.UUID) (*C
 type CreateCircuitInput struct {
 	TenantID    uuid.UUID
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	Provider    string
 	CircuitID   string
 	CircuitType string
@@ -555,9 +637,9 @@ func (r *Repository) CreateCircuit(ctx context.Context, in CreateCircuitInput) (
 	if in.WanIP != "" { wanIP = &in.WanIP }
 	if in.Speed != "" { speed = &in.Speed }
 	if in.Notes != "" { notes = &in.Notes }
-	err := r.db.QueryRow(ctx, `INSERT INTO circuits (tenant_id, client_id, provider, circuit_id, circuit_type, wan_ip, speed, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, tenant_id, client_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at`,
-		in.TenantID, in.ClientID, in.Provider, in.CircuitID, in.CircuitType, wanIP, speed, notes,
-	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
+	err := r.db.QueryRow(ctx, `INSERT INTO circuits (tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at`,
+		in.TenantID, in.ClientID, in.SiteID, in.Provider, in.CircuitID, in.CircuitType, wanIP, speed, notes,
+	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create circuit: %w", err)
 	}
@@ -569,6 +651,7 @@ func (r *Repository) CreateCircuit(ctx context.Context, in CreateCircuitInput) (
 
 type UpdateCircuitInput struct {
 	ClientID    *uuid.UUID
+	SiteID      *uuid.UUID
 	Provider    string
 	CircuitID   string
 	CircuitType string
@@ -583,9 +666,9 @@ func (r *Repository) UpdateCircuit(ctx context.Context, tenantID, id uuid.UUID, 
 	if in.WanIP != "" { wanIP = &in.WanIP }
 	if in.Speed != "" { speed = &in.Speed }
 	if in.Notes != "" { notes = &in.Notes }
-	err := r.db.QueryRow(ctx, `UPDATE circuits SET client_id=$3, provider=$4, circuit_id=$5, circuit_type=$6, wan_ip=$7, speed=$8, notes=$9, updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at`,
-		tenantID, id, in.ClientID, in.Provider, in.CircuitID, in.CircuitType, wanIP, speed, notes,
-	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
+	err := r.db.QueryRow(ctx, `UPDATE circuits SET client_id=$3, site_id=$4, provider=$5, circuit_id=$6, circuit_type=$7, wan_ip=$8, speed=$9, notes=$10, updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING id, tenant_id, client_id, site_id, provider, circuit_id, circuit_type, wan_ip, speed, notes, created_at, updated_at`,
+		tenantID, id, in.ClientID, in.SiteID, in.Provider, in.CircuitID, in.CircuitType, wanIP, speed, notes,
+	).Scan(&c.ID, &c.TenantID, &c.ClientID, &c.SiteID, &c.Provider, &c.CircuitID, &c.CircuitType, &wanIP, &speed, &notes, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}

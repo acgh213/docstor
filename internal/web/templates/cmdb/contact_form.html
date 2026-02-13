@@ -54,16 +54,29 @@
                                        value="{{if .Content.Contact}}{{.Content.Contact.Email}}{{end}}">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="client_id">Client</label>
-                            <select id="client_id" name="client_id" class="form-control">
-                                <option value="">No client</option>
-                                {{$cid := ""}}
-                                {{if .Content.Contact}}{{if .Content.Contact.ClientID}}{{$cid = .Content.Contact.ClientID.String}}{{end}}{{end}}
-                                {{range .Content.Clients}}
-                                <option value="{{.ID}}" {{if eq $cid (.ID.String)}}selected{{end}}>{{.Name}}</option>
-                                {{end}}
-                            </select>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="client_id">Client</label>
+                                <select id="client_id" name="client_id" class="form-control">
+                                    <option value="">No client</option>
+                                    {{$cid := ""}}
+                                    {{if .Content.Contact}}{{if .Content.Contact.ClientID}}{{$cid = .Content.Contact.ClientID.String}}{{end}}{{end}}
+                                    {{range .Content.Clients}}
+                                    <option value="{{.ID}}" {{if eq $cid (.ID.String)}}selected{{end}}>{{.Name}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="site_id">Site</label>
+                                <select id="site_id" name="site_id" class="form-control">
+                                    <option value="">No site</option>
+                                    {{$sid := ""}}
+                                    {{if .Content.Contact}}{{if .Content.Contact.SiteID}}{{$sid = .Content.Contact.SiteID.String}}{{end}}{{end}}
+                                    {{range .Content.Sites}}
+                                    <option value="{{.ID}}" {{if eq $sid (.ID.String)}}selected{{end}}>{{.Name}}{{if .ClientName}} ({{.ClientName}}){{end}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="notes">Notes</label>

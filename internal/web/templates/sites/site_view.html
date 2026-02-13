@@ -56,13 +56,75 @@
                     </dl>
                 </div>
 
+                {{$systems := index .Content "Systems"}}
+                {{$contacts := index .Content "Contacts"}}
+                {{$circuits := index .Content "Circuits"}}
+
+                {{if $systems}}
+                <div class="card">
+                    <h3>🖥 Systems at this site</h3>
+                    <table>
+                        <thead><tr><th>Name</th><th>Type</th><th>IP</th><th>Environment</th></tr></thead>
+                        <tbody>
+                        {{range $systems}}
+                        <tr>
+                            <td><a href="/systems/{{.ID}}">{{.Name}}</a></td>
+                            <td><span class="badge">{{.SystemType}}</span></td>
+                            <td>{{if .IP}}<code>{{.IP}}</code>{{else}}—{{end}}</td>
+                            <td><span class="badge">{{.Environment}}</span></td>
+                        </tr>
+                        {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if $contacts}}
+                <div class="card">
+                    <h3>👤 Contacts at this site</h3>
+                    <table>
+                        <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th></tr></thead>
+                        <tbody>
+                        {{range $contacts}}
+                        <tr>
+                            <td><a href="/contacts/{{.ID}}">{{.Name}}</a></td>
+                            <td>{{.Role}}</td>
+                            <td>{{.Phone}}</td>
+                            <td>{{if .Email}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}</td>
+                        </tr>
+                        {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if $circuits}}
+                <div class="card">
+                    <h3>🔌 Circuits at this site</h3>
+                    <table>
+                        <thead><tr><th>Provider</th><th>Circuit ID</th><th>Type</th><th>WAN IP</th><th>Speed</th></tr></thead>
+                        <tbody>
+                        {{range $circuits}}
+                        <tr>
+                            <td><a href="/circuits/{{.ID}}">{{.Provider}}</a></td>
+                            <td>{{.CircuitID}}</td>
+                            <td><span class="badge">{{.CircuitType}}</span></td>
+                            <td>{{if .WanIP}}<code>{{.WanIP}}</code>{{else}}—{{end}}</td>
+                            <td>{{.Speed}}</td>
+                        </tr>
+                        {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
                 <div class="card">
                     <h3>Related Directory Items</h3>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
-                        <a href="/systems?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🖥 Systems</a>
-                        <a href="/vendors?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🏢 Vendors</a>
-                        <a href="/contacts?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">👤 Contacts</a>
-                        <a href="/circuits?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🔌 Circuits</a>
+                        <a href="/systems?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🖥 All Client Systems</a>
+                        <a href="/vendors?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🏢 Client Vendors</a>
+                        <a href="/contacts?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">👤 All Client Contacts</a>
+                        <a href="/circuits?client_id={{$site.ClientID}}" class="btn btn-secondary btn-sm">🔌 All Client Circuits</a>
                     </div>
                 </div>
 

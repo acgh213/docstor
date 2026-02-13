@@ -50,6 +50,8 @@
                         <dd>{{if .Content.FQDN}}<code>{{.Content.FQDN}}</code>{{else}}<span class="text-muted">Not set</span>{{end}}</dd>
                         <dt>Operating System</dt>
                         <dd>{{if .Content.OS}}{{.Content.OS}}{{else}}<span class="text-muted">Not set</span>{{end}}</dd>
+                        <dt>Site</dt>
+                        <dd>{{if .Content.SiteID}}<a href="/sites/{{.Content.SiteID}}">View Site</a>{{else}}<span class="text-muted">No site</span>{{end}}</dd>
                         <dt>Notes</dt>
                         <dd>{{if .Content.Notes}}{{.Content.Notes}}{{else}}<span class="text-muted">No notes</span>{{end}}</dd>
                         <dt>Created</dt>

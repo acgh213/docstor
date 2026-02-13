@@ -13,6 +13,7 @@ import (
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/cmdb"
+	"github.com/exedev/docstor/internal/sites"
 )
 
 // parseOptionalClientID extracts an optional client_id from the form.
@@ -28,6 +29,19 @@ func parseOptionalClientID(r *http.Request) *uuid.UUID {
 	return &cid
 }
 
+// parseOptionalSiteID extracts an optional site_id from the form.
+func parseOptionalSiteID(r *http.Request) *uuid.UUID {
+	sidStr := strings.TrimSpace(r.FormValue("site_id"))
+	if sidStr == "" {
+		return nil
+	}
+	sid, err := uuid.Parse(sidStr)
+	if err != nil {
+		return nil
+	}
+	return &sid
+}
+
 // --- Content structs ---
 
 type SystemsListData struct {
@@ -39,6 +53,7 @@ type SystemsListData struct {
 type SystemFormData struct {
 	System  *cmdb.System
 	Clients []clients.Client
+	Sites   []sites.Site
 }
 
 type VendorsListData struct {
@@ -50,6 +65,7 @@ type VendorsListData struct {
 type VendorFormData struct {
 	Vendor  *cmdb.Vendor
 	Clients []clients.Client
+	Sites   []sites.Site
 }
 
 type ContactsListData struct {
@@ -61,6 +77,7 @@ type ContactsListData struct {
 type ContactFormData struct {
 	Contact *cmdb.Contact
 	Clients []clients.Client
+	Sites   []sites.Site
 }
 
 type CircuitsListData struct {
@@ -72,6 +89,7 @@ type CircuitsListData struct {
 type CircuitFormData struct {
 	Circuit *cmdb.Circuit
 	Clients []clients.Client
+	Sites   []sites.Site
 }
 
 // ===================== SYSTEMS =====================
@@ -120,10 +138,11 @@ func (s *Server) handleSystemNew(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "New System - Docstor"
-	data.Content = SystemFormData{Clients: clientList}
+	data.Content = SystemFormData{Clients: clientList, Sites: siteList}
 	s.render(w, r, "system_form.html", data)
 }
 
@@ -140,10 +159,11 @@ func (s *Server) handleSystemCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New System - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = SystemFormData{Clients: clientList}
+		data.Content = SystemFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
@@ -156,13 +176,15 @@ func (s *Server) handleSystemCreate(w http.ResponseWriter, r *http.Request) {
 	os := strings.TrimSpace(r.FormValue("os"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if name == "" || systemType == "" || environment == "" {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New System - Docstor"
 		data.Error = "Name, system type, and environment are required"
-		data.Content = SystemFormData{Clients: clientList}
+		data.Content = SystemFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
@@ -170,6 +192,7 @@ func (s *Server) handleSystemCreate(w http.ResponseWriter, r *http.Request) {
 	sys, err := s.cmdb.CreateSystem(ctx, cmdb.CreateSystemInput{
 		TenantID:    tenant.ID,
 		ClientID:    clientID,
+		SiteID:      siteID,
 		SystemType:  systemType,
 		Name:        name,
 		FQDN:        fqdn,
@@ -182,10 +205,11 @@ func (s *Server) handleSystemCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to create system", "error", err)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New System - Docstor"
 		data.Error = "Failed to create system"
-		data.Content = SystemFormData{Clients: clientList}
+		data.Content = SystemFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
@@ -260,10 +284,11 @@ func (s *Server) handleSystemEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "Edit " + sys.Name + " - Docstor"
-	data.Content = SystemFormData{System: sys, Clients: clientList}
+	data.Content = SystemFormData{System: sys, Clients: clientList, Sites: siteList}
 	s.render(w, r, "system_form.html", data)
 }
 
@@ -286,10 +311,11 @@ func (s *Server) handleSystemUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit System - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = SystemFormData{Clients: clientList}
+		data.Content = SystemFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
@@ -302,20 +328,23 @@ func (s *Server) handleSystemUpdate(w http.ResponseWriter, r *http.Request) {
 	os := strings.TrimSpace(r.FormValue("os"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if name == "" || systemType == "" || environment == "" {
 		existing, _ := s.cmdb.GetSystem(ctx, tenant.ID, systemID)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit System - Docstor"
 		data.Error = "Name, system type, and environment are required"
-		data.Content = SystemFormData{System: existing, Clients: clientList}
+		data.Content = SystemFormData{System: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
 
 	sys, err := s.cmdb.UpdateSystem(ctx, tenant.ID, systemID, cmdb.UpdateSystemInput{
 		ClientID:    clientID,
+		SiteID:      siteID,
 		SystemType:  systemType,
 		Name:        name,
 		FQDN:        fqdn,
@@ -332,10 +361,11 @@ func (s *Server) handleSystemUpdate(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to update system", "error", err)
 		existing, _ := s.cmdb.GetSystem(ctx, tenant.ID, systemID)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit System - Docstor"
 		data.Error = "Failed to update system"
-		data.Content = SystemFormData{System: existing, Clients: clientList}
+		data.Content = SystemFormData{System: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "system_form.html", data)
 		return
 	}
@@ -780,10 +810,11 @@ func (s *Server) handleContactNew(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "New Contact - Docstor"
-	data.Content = ContactFormData{Clients: clientList}
+	data.Content = ContactFormData{Clients: clientList, Sites: siteList}
 	s.render(w, r, "contact_form.html", data)
 }
 
@@ -800,10 +831,11 @@ func (s *Server) handleContactCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Contact - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = ContactFormData{Clients: clientList}
+		data.Content = ContactFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
@@ -814,13 +846,15 @@ func (s *Server) handleContactCreate(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if name == "" {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Contact - Docstor"
 		data.Error = "Name is required"
-		data.Content = ContactFormData{Clients: clientList}
+		data.Content = ContactFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
@@ -828,6 +862,7 @@ func (s *Server) handleContactCreate(w http.ResponseWriter, r *http.Request) {
 	c, err := s.cmdb.CreateContact(ctx, cmdb.CreateContactInput{
 		TenantID: tenant.ID,
 		ClientID: clientID,
+		SiteID:   siteID,
 		Name:     name,
 		Role:     role,
 		Phone:    phone,
@@ -837,10 +872,11 @@ func (s *Server) handleContactCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to create contact", "error", err)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Contact - Docstor"
 		data.Error = "Failed to create contact"
-		data.Content = ContactFormData{Clients: clientList}
+		data.Content = ContactFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
@@ -915,10 +951,11 @@ func (s *Server) handleContactEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "Edit " + c.Name + " - Docstor"
-	data.Content = ContactFormData{Contact: c, Clients: clientList}
+	data.Content = ContactFormData{Contact: c, Clients: clientList, Sites: siteList}
 	s.render(w, r, "contact_form.html", data)
 }
 
@@ -941,10 +978,11 @@ func (s *Server) handleContactUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Contact - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = ContactFormData{Clients: clientList}
+		data.Content = ContactFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
@@ -955,20 +993,23 @@ func (s *Server) handleContactUpdate(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if name == "" {
 		existing, _ := s.cmdb.GetContact(ctx, tenant.ID, id)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Contact - Docstor"
 		data.Error = "Name is required"
-		data.Content = ContactFormData{Contact: existing, Clients: clientList}
+		data.Content = ContactFormData{Contact: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
 
 	c, err := s.cmdb.UpdateContact(ctx, tenant.ID, id, cmdb.UpdateContactInput{
 		ClientID: clientID,
+		SiteID:   siteID,
 		Name:     name,
 		Role:     role,
 		Phone:    phone,
@@ -983,10 +1024,11 @@ func (s *Server) handleContactUpdate(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to update contact", "error", err)
 		existing, _ := s.cmdb.GetContact(ctx, tenant.ID, id)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Contact - Docstor"
 		data.Error = "Failed to update contact"
-		data.Content = ContactFormData{Contact: existing, Clients: clientList}
+		data.Content = ContactFormData{Contact: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "contact_form.html", data)
 		return
 	}
@@ -1101,10 +1143,11 @@ func (s *Server) handleCircuitNew(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "New Circuit - Docstor"
-	data.Content = CircuitFormData{Clients: clientList}
+	data.Content = CircuitFormData{Clients: clientList, Sites: siteList}
 	s.render(w, r, "circuit_form.html", data)
 }
 
@@ -1121,10 +1164,11 @@ func (s *Server) handleCircuitCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Circuit - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = CircuitFormData{Clients: clientList}
+		data.Content = CircuitFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
@@ -1136,13 +1180,15 @@ func (s *Server) handleCircuitCreate(w http.ResponseWriter, r *http.Request) {
 	speed := strings.TrimSpace(r.FormValue("speed"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if provider == "" || circuitID == "" || circuitType == "" {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Circuit - Docstor"
 		data.Error = "Provider, circuit ID, and circuit type are required"
-		data.Content = CircuitFormData{Clients: clientList}
+		data.Content = CircuitFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
@@ -1150,6 +1196,7 @@ func (s *Server) handleCircuitCreate(w http.ResponseWriter, r *http.Request) {
 	c, err := s.cmdb.CreateCircuit(ctx, cmdb.CreateCircuitInput{
 		TenantID:    tenant.ID,
 		ClientID:    clientID,
+		SiteID:      siteID,
 		Provider:    provider,
 		CircuitID:   circuitID,
 		CircuitType: circuitType,
@@ -1160,10 +1207,11 @@ func (s *Server) handleCircuitCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to create circuit", "error", err)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "New Circuit - Docstor"
 		data.Error = "Failed to create circuit"
-		data.Content = CircuitFormData{Clients: clientList}
+		data.Content = CircuitFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
@@ -1238,10 +1286,11 @@ func (s *Server) handleCircuitEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clientList, _ := s.clients.List(ctx, tenant.ID)
+	siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 
 	data := s.newPageData(r)
 	data.Title = "Edit Circuit - Docstor"
-	data.Content = CircuitFormData{Circuit: c, Clients: clientList}
+	data.Content = CircuitFormData{Circuit: c, Clients: clientList, Sites: siteList}
 	s.render(w, r, "circuit_form.html", data)
 }
 
@@ -1264,10 +1313,11 @@ func (s *Server) handleCircuitUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Circuit - Docstor"
 		data.Error = "Invalid form data"
-		data.Content = CircuitFormData{Clients: clientList}
+		data.Content = CircuitFormData{Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
@@ -1279,20 +1329,23 @@ func (s *Server) handleCircuitUpdate(w http.ResponseWriter, r *http.Request) {
 	speed := strings.TrimSpace(r.FormValue("speed"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	clientID := parseOptionalClientID(r)
+	siteID := parseOptionalSiteID(r)
 
 	if provider == "" || circuitID == "" || circuitType == "" {
 		existing, _ := s.cmdb.GetCircuit(ctx, tenant.ID, id)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Circuit - Docstor"
 		data.Error = "Provider, circuit ID, and circuit type are required"
-		data.Content = CircuitFormData{Circuit: existing, Clients: clientList}
+		data.Content = CircuitFormData{Circuit: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
 
 	c, err := s.cmdb.UpdateCircuit(ctx, tenant.ID, id, cmdb.UpdateCircuitInput{
 		ClientID:    clientID,
+		SiteID:      siteID,
 		Provider:    provider,
 		CircuitID:   circuitID,
 		CircuitType: circuitType,
@@ -1308,10 +1361,11 @@ func (s *Server) handleCircuitUpdate(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to update circuit", "error", err)
 		existing, _ := s.cmdb.GetCircuit(ctx, tenant.ID, id)
 		clientList, _ := s.clients.List(ctx, tenant.ID)
+		siteList, _ := s.sites.List(ctx, tenant.ID, nil)
 		data := s.newPageData(r)
 		data.Title = "Edit Circuit - Docstor"
 		data.Error = "Failed to update circuit"
-		data.Content = CircuitFormData{Circuit: existing, Clients: clientList}
+		data.Content = CircuitFormData{Circuit: existing, Clients: clientList, Sites: siteList}
 		s.render(w, r, "circuit_form.html", data)
 		return
 	}
