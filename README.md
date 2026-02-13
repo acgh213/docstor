@@ -1,16 +1,16 @@
 # Docstor
 
-**documentation for MSPs that doesn’t feel like punishment**
+**documentation for MSPs that doesn't feel like punishment**
 
 Docstor is a self-hosted, server-rendered documentation system built specifically for managed service providers.
 
-no electron wrapper  
-no SaaS ransom  
-no “search is an enterprise feature” nonsense  
+no electron wrapper.  
+no SaaS ransom.  
+no "search is an enterprise feature" nonsense.  
 
 just markdown documents, living runbooks with verification tracking, and an audit trail that actually behaves like an audit trail.
 
-it’s built by someone who has been on-call at 2am trying to find firewall rules buried in a SharePoint mausoleum. we’re not doing that again.
+it's built by someone who has been on-call at 2am trying to find firewall rules buried in a SharePoint mausoleum. we're not doing that again.
 
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat&logo=go)  
 ![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?style=flat&logo=postgresql)  
@@ -29,13 +29,13 @@ MSP documentation tools usually fall into one of three buckets:
 
 Docstor is none of those.
 
-It’s a Go binary.  
+It's a Go binary.  
 It uses Postgres.  
 It renders HTML on the server.  
 
-It loads fast. It searches fast. It doesn’t decide your session expired while you were mid-edit.
+It loads fast. It searches fast. It doesn't decide your session expired while you were mid-edit.
 
-That’s the bar.
+That's the bar.
 
 ---
 
@@ -43,7 +43,7 @@ That’s the bar.
 
 ### the solid, already-shipped stuff
 
-- **multi-tenant** — actual isolation. not “we forgot a WHERE clause.”
+- **multi-tenant** — actual isolation. not "we forgot a WHERE clause."
 - **immutable revisions** — every save is permanent. reverting creates a new revision.
 - **server-side markdown rendering** — goldmark + bluemonday. sanitized.
 - **full-text search** — Postgres FTS. filterable and scoped by client, type, owner, recency.
@@ -102,11 +102,11 @@ Rendered server-side. Sanitized.
 **Editor:** CodeMirror 6  
 Loaded only on edit pages.
 
-**HTMX:**  
+**HTMX:** 1.x  
 Used for previews and inline interactions.
 
-**Auth:**  
-bcrypt + secure cookies. Sessions stored in DB. Rate limiting on login.
+**Auth:** bcrypt + secure cookies  
+Sessions stored in DB. Rate limiting on login.
 
 ---
 
@@ -122,107 +122,99 @@ bcrypt + secure cookies. Sessions stored in DB. Rate limiting on login.
 ```bash
 git clone https://github.com/acgh213/docstor.git
 cd docstor
-
 cp .env.example .env
-
 make dev
-
-run
 ```
 
+App runs at `http://localhost:8080`. A seed user is created on first run.
 
-App runs at http://localhost:8080.
-A seed user is created on first run.
+### build
+
 ```bash
-build
-
 make build
 ```
-Produces ./bin/docstor.
-```bash
-test
 
+Produces `./bin/docstor`.
+
+### test
+
+```bash
 make test
 ```
+
 Tests use a real Postgres instance via Docker. Mocking your database mostly just tests your imagination.
 
-
 ---
 
-# project structure
+## project structure
 
-cmd/docstor/         → entrypoint
+```
+cmd/docstor/          entrypoint
 
 internal/
-  auth/              → sessions, passwords, middleware
-  db/                → connection + embedded migrations
-  docs/              → documents, revisions, markdown, diffs
-  runbooks/          → verification tracking
-  clients/           → client CRUD
-  sites/             → site hierarchy
-  cmdb/              → configuration items
-  attachments/       → file storage + metadata
-  templates/         → templates + checklist instances
-  incidents/         → incidents + known issues
-  changes/           → change records
-  doclinks/          → link extraction + backlinks
-  audit/             → append-only logger
-  pagination/        → shared helpers
-  web/               → handlers, router, rendering
-  config/            → env config
-  testutil/          → shared test helpers
+  auth/               sessions, passwords, middleware
+  db/                 connection + embedded migrations
+  docs/               documents, revisions, markdown, diffs
+  runbooks/           verification tracking
+  clients/            client CRUD
+  sites/              site hierarchy
+  cmdb/               configuration items
+  attachments/        file storage + metadata
+  templates/          templates + checklist instances
+  incidents/          incidents + known issues
+  changes/            change records
+  doclinks/           link extraction + backlinks
+  audit/              append-only logger
+  pagination/         shared helpers
+  web/                handlers, router, rendering
+  config/             env config
+  testutil/           shared test helpers
 
 web/
-  templates/         → layout + UI
-  static/            → CSS + minimal JS
+  templates/          layout + UI
+  static/             CSS + minimal JS
 
-editor-bundle/       → CodeMirror build
-migrations/          → SQL reference copies
-
+editor-bundle/        CodeMirror build
+migrations/           SQL reference copies
+```
 
 ---
 
-# decisions i will defend calmly but firmly
+## decisions i will defend calmly but firmly
 
-No SPA.
-Server-rendered HTML is faster, simpler, and doesn’t require inventing a state problem to justify a framework.
+**No SPA.**  
+Server-rendered HTML is faster, simpler, and doesn't require inventing a state problem to justify a framework.
 
-No ORM.
+**No ORM.**  
 SQL is explicit. Queries are visible. Tenant scoping is enforced deliberately. Performance problems are found in review, not in production at 2am.
 
-Immutable revisions.
+**Immutable revisions.**  
 History is append-only. Reverts create new revisions. Audit logs are not editable. If something changed, we can see exactly what and when.
 
-No secret storage.
+**No secret storage.**  
 This is documentation. Store passwords in a vault. We store references, not credentials.
 
-Tenant isolation everywhere.
-Every query. Every handler. Every test.
-Cross-tenant leakage is a failure condition.
-
+**Tenant isolation everywhere.**  
+Every query. Every handler. Every test. Cross-tenant leakage is a failure condition.
 
 ---
 
-# contributing
+## contributing
 
-It’s early and opinionated. PRs welcome if you align with the philosophy.
+It's early and opinionated. PRs welcome if you align with the philosophy.
 
-Read claude.md. It’s the build contract. It is not optional.
+Read `claude.md`. It's the build contract. It is not optional.
 
 If you open an issue suggesting a React rewrite, I will close it with enthusiasm.
 
-
 ---
 
-# license
+## license
 
 MIT.
 
-Do what you want.
-
-Just don’t deploy it without changing the session keys in .env and then blame me when you invent chaos.
-
+Do what you want. Just don't deploy it without changing the session keys in `.env` and then blame me when you invent chaos.
 
 ---
 
-built with stubbornness, caffeine, and the belief that documentation should be infrastructure — not a SaaS funnel ✨
+*built with stubbornness, caffeine, and the belief that documentation should be infrastructure — not a SaaS funnel* ✨
