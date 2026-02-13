@@ -70,7 +70,8 @@ func (l *Logger) LogGlobal(ctx context.Context, action, targetType string, metad
 const (
 	ActionLoginSuccess   = "login.success"
 	ActionLoginFailed    = "login.failed"
-	ActionLogout         = "logout"
+	ActionLogout                = "logout"
+	ActionRunbookIntervalUpdate = "runbook.interval_update"
 	ActionDocCreate      = "doc.create"
 	ActionDocEdit        = "doc.edit"
 	ActionDocDelete      = "doc.delete"

@@ -222,9 +222,25 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	cookie, err := r.Cookie(auth.SessionCookieName)
 	if err == nil {
-		_ = s.sessions.Delete(r.Context(), cookie.Value)
+		// Resolve session to get user/tenant for audit before deleting
+		session, valErr := s.sessions.Validate(ctx, cookie.Value)
+		if valErr == nil {
+			userID := session.UserID
+			_ = s.audit.Log(ctx, audit.Entry{
+				TenantID:    session.TenantID,
+				ActorUserID: &userID,
+				Action:      audit.ActionLogout,
+				TargetType:  audit.TargetUser,
+				TargetID:    &userID,
+				IP:          r.RemoteAddr,
+				UserAgent:   r.UserAgent(),
+			})
+		}
+		_ = s.sessions.Delete(ctx, cookie.Value)
 	}
 
 	http.SetCookie(w, &http.Cookie{

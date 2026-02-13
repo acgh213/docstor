@@ -167,6 +167,18 @@ func (s *Server) handleRunbookUpdateInterval(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	user := auth.UserFromContext(ctx)
+	_ = s.audit.Log(ctx, audit.Entry{
+		TenantID:    tenant.ID,
+		ActorUserID: &user.ID,
+		Action:      audit.ActionRunbookIntervalUpdate,
+		TargetType:  audit.TargetDocument,
+		TargetID:    &docID,
+		IP:          r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Metadata:    map[string]any{"interval_days": interval},
+	})
+
 	// Get doc for redirect
 	doc, err := s.docs.GetByID(ctx, tenant.ID, docID)
 	if err != nil {
