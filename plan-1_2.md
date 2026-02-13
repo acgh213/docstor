@@ -128,9 +128,9 @@ Verify that specific write operations produce the expected audit_log rows:
 | A-2   | ✅     | 2026-02-13 | 2026-02-13 |
 | A-3   | ✅     | 2026-02-13 | 2026-02-13 |
 | A-4   | ✅     | 2026-02-13 | 2026-02-13 |
-| B-1   |        |         |           |
-| B-2   |        |         |           |
-| B-3   |        |         |           |
+| B-1   | ✅     | Feb 13  | Feb 13    |
+| B-2   | ✅     | Feb 13  | Feb 13    |
+| B-3   | ✅     | Feb 13  | Feb 13    |
 | C     |        |         |           |
 | D-1   |        |         |           |
 | D-2   |        |         |           |
