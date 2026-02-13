@@ -1,159 +1,125 @@
-Docstor
+# Docstor
 
-documentation for MSPs that doesn’t feel like punishment
+**documentation for MSPs that doesn’t feel like punishment**
 
 Docstor is a self-hosted, server-rendered documentation system built specifically for managed service providers.
 
-no electron wrapper
-no SaaS ransom
-no “search is an enterprise feature” nonsense
+no electron wrapper  
+no SaaS ransom  
+no “search is an enterprise feature” nonsense  
 
 just markdown documents, living runbooks with verification tracking, and an audit trail that actually behaves like an audit trail.
 
 it’s built by someone who has been on-call at 2am trying to find firewall rules buried in a SharePoint mausoleum. we’re not doing that again.
 
-
-
-
-
-
+![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat&logo=go)  
+![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?style=flat&logo=postgresql)  
+![License](https://img.shields.io/badge/license-MIT-green)  
+![vibes](https://img.shields.io/badge/vibes-immaculate-ff69b4)
 
 ---
 
-why this exists
+## why this exists
 
 MSP documentation tools usually fall into one of three buckets:
 
-expensive SaaS that slowly converts your data into leverage
-
-a wiki from 2008 held together by muscle memory
-
-Confluence (no further comment)
-
+- expensive SaaS that slowly converts your data into leverage  
+- a wiki from 2008 held together by muscle memory  
+- Confluence (no further comment)
 
 Docstor is none of those.
 
-It’s a Go binary.
-It uses Postgres.
-It renders HTML on the server.
+It’s a Go binary.  
+It uses Postgres.  
+It renders HTML on the server.  
 
 It loads fast. It searches fast. It doesn’t decide your session expired while you were mid-edit.
 
 That’s the bar.
 
+---
+
+## what it does
+
+### the solid, already-shipped stuff
+
+- **multi-tenant** — actual isolation. not “we forgot a WHERE clause.”
+- **immutable revisions** — every save is permanent. reverting creates a new revision.
+- **server-side markdown rendering** — goldmark + bluemonday. sanitized.
+- **full-text search** — Postgres FTS. filterable and scoped by client, type, owner, recency.
+- **living runbooks** — verification cadence tracking with an overdue dashboard.
+- **clients + sites** — first-class entities. client → site hierarchy.
+- **CMDB-lite** — configuration items linked properly with shortcode references.
+- **attachments** — stored on disk, metadata in Postgres.
+- **templates + checklists** — reusable structure with tracked instances.
+- **incidents + known issues**
+- **change records**
+- **doc links + backlinks** — internal link detection and broken link reporting.
+- **CodeMirror 6 editor** — with vim mode.
+- **HTMX for the interactive bits** — previews, inline edits, tree expansion.
+- **append-only audit log** — immutable logging of meaningful actions.
+- **role-based access** — TenantAdmin / Editor / Reader.
+- **CSRF protection** — works with HTMX.
 
 ---
 
-what it does
+## scale snapshot
 
-the solid, already-shipped stuff
-
-multi-tenant — actual isolation. not “we forgot a WHERE clause.”
-
-immutable revisions — every save is permanent. reverting creates a new revision. auditors sleep better.
-
-server-side markdown rendering — goldmark + bluemonday. sanitized. boring. correct.
-
-full-text search — Postgres FTS. fast. filterable. scoped by client, type, owner, recency.
-
-living runbooks — verification cadence tracking with an overdue dashboard so you know which ones are fiction.
-
-clients + sites — first-class entities. client → site hierarchy for real-world MSP mess.
-
-CMDB-lite — configuration items linked properly. shortcode references inside docs.
-
-attachments — stored on disk, metadata in Postgres. evidence stays attached.
-
-templates + checklists — reusable structure with tracked instances.
-
-incidents + known issues
-
-change records — because audits are not hypothetical.
-
-doc links + backlinks — internal link detection and broken link reporting.
-
-CodeMirror 6 editor — with vim mode. because yes.
-
-HTMX for the interactive bits — previews, inline edits, tree expansion. no SPA.
-
-append-only audit log — logins, edits, verification events, role changes. immutable.
-
-role-based access — TenantAdmin / Editor / Reader. simple.
-
-CSRF protection — works with HTMX. nosurf is doing honest work.
-
-
-
----
-
-scale snapshot
-
-~18k lines of Go (including ~4k tests)
-
-~6k lines of HTML templates
-
-17 test files covering tenant isolation, role gating, XSS regression, revision conflicts
-
-9 migrations
-
-51 commits of accumulated stubbornness
-
-0 npm dependencies at runtime
-
+- ~18k lines of Go (including ~4k tests)
+- ~6k lines of HTML templates
+- 17 test files covering tenant isolation, role gating, XSS regression, revision conflicts
+- 9 migrations
+- 51 commits
+- 0 npm dependencies at runtime
 
 the editor bundle is built separately and committed. runtime stays clean.
 
-
 ---
 
-stack
+## stack
 
-Language: Go 1.22
-Compiles fast. Single binary. Trusted at 3am.
+**Language:** Go 1.22  
+Compiles fast. Single binary.
 
-HTTP: chi
-Basically net/http with routing. Predictable.
+**HTTP:** chi  
+Lightweight routing on top of net/http.
 
-Database: Postgres 16
-FTS, JSONB, stability. No ORM. Just SQL.
+**Database:** Postgres 16  
+FTS, JSONB, stable. No ORM. Just SQL.
 
-Migrations: golang-migrate
+**Migrations:** golang-migrate  
 Embedded. Runs on startup.
 
-Templates: html/template
+**Templates:** html/template  
 Server-rendered. Works without JavaScript.
 
-CSS: custom and minimal
-No Tailwind. No Bootstrap. Just restraint.
+**CSS:** custom and minimal  
+No Tailwind. No Bootstrap.
 
-Markdown: goldmark + bluemonday
-Render server-side. Sanitize everything.
+**Markdown:** goldmark + bluemonday  
+Rendered server-side. Sanitized.
 
-Editor: CodeMirror 6
-Loaded only on edit pages. One allowed JS island.
+**Editor:** CodeMirror 6  
+Loaded only on edit pages.
 
-HTMX:
-For previews and inline interactions. That’s it.
+**HTMX:**  
+Used for previews and inline interactions.
 
-Auth:
+**Auth:**  
 bcrypt + secure cookies. Sessions stored in DB. Rate limiting on login.
-
 
 ---
 
-quickstart
+## quickstart
 
-prerequisites
+### prerequisites
 
-Go 1.22+
+- Go 1.22+
+- Docker + Docker Compose (for Postgres)
 
-Docker + Docker Compose (for Postgres)
+### run
 
-
-that’s it.
-
-run
-
+```bash
 git clone https://github.com/acgh213/docstor.git
 cd docstor
 
@@ -161,25 +127,29 @@ cp .env.example .env
 
 make dev
 
+run
+```
+
+
 App runs at http://localhost:8080.
 A seed user is created on first run.
-
+```bash
 build
 
 make build
-
+```
 Produces ./bin/docstor.
-
+```bash
 test
 
 make test
-
+```
 Tests use a real Postgres instance via Docker. Mocking your database mostly just tests your imagination.
 
 
 ---
 
-project structure
+# project structure
 
 cmd/docstor/         → entrypoint
 
@@ -212,7 +182,7 @@ migrations/          → SQL reference copies
 
 ---
 
-decisions i will defend calmly but firmly
+# decisions i will defend calmly but firmly
 
 No SPA.
 Server-rendered HTML is faster, simpler, and doesn’t require inventing a state problem to justify a framework.
@@ -233,7 +203,7 @@ Cross-tenant leakage is a failure condition.
 
 ---
 
-contributing
+# contributing
 
 It’s early and opinionated. PRs welcome if you align with the philosophy.
 
@@ -244,7 +214,7 @@ If you open an issue suggesting a React rewrite, I will close it with enthusiasm
 
 ---
 
-license
+# license
 
 MIT.
 
