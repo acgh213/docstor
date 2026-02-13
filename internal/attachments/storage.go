@@ -89,7 +89,8 @@ func (s *LocalStorage) Delete(storageKey string) error {
 	return os.Remove(fullPath)
 }
 
-// ComputeSHA256 calculates SHA256 hash while reading and returns both hash and content
+// ComputeSHA256 calculates SHA256 hash while reading and returns both hash and content.
+// maxSize limits how much data to read (0 = unlimited). Returns error if limit exceeded.
 func ComputeSHA256(r io.Reader) (hash string, content []byte, err error) {
 	h := sha256.New()
 	data, err := io.ReadAll(io.TeeReader(r, h))
@@ -97,4 +98,30 @@ func ComputeSHA256(r io.Reader) (hash string, content []byte, err error) {
 		return "", nil, err
 	}
 	return hex.EncodeToString(h.Sum(nil)), data, nil
+}
+
+// ComputeSHA256Streaming hashes a file without buffering the entire content in memory.
+// It writes to a temp file while hashing, then returns the hash and temp file path.
+// Caller is responsible for removing the temp file.
+func ComputeSHA256Streaming(r io.Reader, tmpDir string) (hash string, tmpPath string, size int64, err error) {
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return "", "", 0, fmt.Errorf("create tmp dir: %w", err)
+	}
+	tmpFile, err := os.CreateTemp(tmpDir, ".upload-*")
+	if err != nil {
+		return "", "", 0, fmt.Errorf("create temp file: %w", err)
+	}
+	tmpPath = tmpFile.Name()
+
+	h := sha256.New()
+	w := io.MultiWriter(tmpFile, h)
+
+	size, err = io.Copy(w, r)
+	tmpFile.Close()
+	if err != nil {
+		os.Remove(tmpPath)
+		return "", "", 0, fmt.Errorf("copy to temp: %w", err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), tmpPath, size, nil
 }

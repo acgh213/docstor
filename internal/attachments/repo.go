@@ -317,3 +317,49 @@ func (r *Repo) ListBundleItems(ctx context.Context, tenantID, bundleID uuid.UUID
 	}
 	return items, rows.Err()
 }
+
+// DeleteAttachment removes an attachment if it has no links or bundle references.
+// Returns the storage key so the caller can delete the file.
+func (r *Repo) DeleteAttachment(ctx context.Context, tenantID, attachmentID uuid.UUID) (storageKey string, err error) {
+	// Check for remaining links
+	var linkCount int
+	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM attachment_links WHERE tenant_id = $1 AND attachment_id = $2`,
+		tenantID, attachmentID).Scan(&linkCount)
+	if err != nil {
+		return "", fmt.Errorf("check links: %w", err)
+	}
+	if linkCount > 0 {
+		return "", fmt.Errorf("attachment still has %d link(s)", linkCount)
+	}
+
+	// Check for bundle references
+	var bundleCount int
+	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM evidence_bundle_items WHERE tenant_id = $1 AND attachment_id = $2`,
+		tenantID, attachmentID).Scan(&bundleCount)
+	if err != nil {
+		return "", fmt.Errorf("check bundles: %w", err)
+	}
+	if bundleCount > 0 {
+		return "", fmt.Errorf("attachment still in %d bundle(s)", bundleCount)
+	}
+
+	// Get storage key and delete
+	err = r.db.QueryRow(ctx, `DELETE FROM attachments WHERE tenant_id = $1 AND id = $2 RETURNING storage_key`,
+		tenantID, attachmentID).Scan(&storageKey)
+	if err != nil {
+		return "", fmt.Errorf("delete attachment: %w", err)
+	}
+	return storageKey, nil
+}
+
+// CountOrphanedAttachments returns the number of attachments with no links or bundle references.
+func (r *Repo) CountOrphanedAttachments(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*) FROM attachments a
+		WHERE a.tenant_id = $1
+		  AND NOT EXISTS (SELECT 1 FROM attachment_links al WHERE al.attachment_id = a.id AND al.tenant_id = a.tenant_id)
+		  AND NOT EXISTS (SELECT 1 FROM evidence_bundle_items ebi WHERE ebi.attachment_id = a.id AND ebi.tenant_id = a.tenant_id)
+	`, tenantID).Scan(&count)
+	return count, err
+}

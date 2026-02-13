@@ -31,9 +31,12 @@ func (s *Server) handleAttachmentUpload(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Enforce upload size limit at the HTTP level
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+
 	// Parse multipart form
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		http.Error(w, "file too large", http.StatusBadRequest)
+		http.Error(w, "file too large (max 50MB)", http.StatusRequestEntityTooLarge)
 		return
 	}
 
@@ -692,4 +695,48 @@ func (s *Server) handleAttachmentsAPI(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+func (s *Server) handleAttachmentDelete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	mem := auth.MembershipFromContext(ctx)
+	if mem == nil || !mem.IsEditor() {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	attID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	storageKey, err := s.attachments.DeleteAttachment(ctx, mem.TenantID, attID)
+	if err != nil {
+		slog.Error("delete attachment", "error", err)
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+
+	// Delete the file from storage
+	if storageKey != "" {
+		if err := s.storage.Delete(storageKey); err != nil {
+			slog.Warn("failed to delete file from storage", "key", storageKey, "error", err)
+		}
+	}
+
+	user := auth.UserFromContext(ctx)
+	tenant := auth.TenantFromContext(ctx)
+	_ = s.audit.Log(ctx, audit.Entry{
+		TenantID:    tenant.ID,
+		ActorUserID: &user.ID,
+		Action:      "attachment.delete",
+		TargetType:  "attachment",
+		TargetID:    &attID,
+		IP:          r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+	})
+
+	setFlashSuccess(w, "Attachment deleted")
+	http.Redirect(w, r, r.Referer(), http.StatusSeeOther)
 }
