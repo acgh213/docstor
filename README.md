@@ -12,9 +12,9 @@ just markdown documents, living runbooks with verification tracking, and an audi
 
 it's built by someone who has been on-call at 2am trying to find firewall rules buried in a SharePoint mausoleum. we're not doing that again.
 
-![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat&logo=go)  
-![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?style=flat&logo=postgresql)  
-![License](https://img.shields.io/badge/license-MIT-green)  
+![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat&logo=go)
+![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?style=flat&logo=postgresql)
+![License](https://img.shields.io/badge/license-MIT-green)
 ![vibes](https://img.shields.io/badge/vibes-immaculate-ff69b4)
 
 ---
