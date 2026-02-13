@@ -131,7 +131,7 @@ Verify that specific write operations produce the expected audit_log rows:
 | B-1   | ✅     | Feb 13  | Feb 13    |
 | B-2   | ✅     | Feb 13  | Feb 13    |
 | B-3   | ✅     | Feb 13  | Feb 13    |
-| C     |        |         |           |
+| C     | ✅     | Feb 13  | Feb 13    |
 | D-1   |        |         |           |
 | D-2   |        |         |           |
 | E     |        |         |           |
