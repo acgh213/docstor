@@ -5,13 +5,15 @@ import (
 	"net/http"
 
 	"github.com/exedev/docstor/internal/auth"
+	"github.com/exedev/docstor/internal/doclinks"
 	"github.com/exedev/docstor/internal/docs"
 )
 
 type DocHealthPageData struct {
-	Summary   *docs.DocHealthSummary
-	HealthPct int
-	StaleDays int
+	Summary     *docs.DocHealthSummary
+	HealthPct   int
+	StaleDays   int
+	BrokenLinks []doclinks.BrokenLink
 }
 
 func (s *Server) handleDocHealth(w http.ResponseWriter, r *http.Request) {
@@ -35,12 +37,19 @@ func (s *Server) handleDocHealth(w http.ResponseWriter, r *http.Request) {
 		healthPct = (summary.HealthyCount * 100) / summary.TotalDocs
 	}
 
+	// Load broken links
+	brokenLinks, blErr := s.doclinks.GetBrokenLinks(ctx, tenant.ID)
+	if blErr != nil {
+		slog.Error("failed to get broken links", "error", blErr)
+	}
+
 	data := s.newPageData(r)
 	data.Title = "Doc Health - Docstor"
 	data.Content = DocHealthPageData{
-		Summary:   summary,
-		HealthPct: healthPct,
-		StaleDays: staleDays,
+		Summary:     summary,
+		HealthPct:   healthPct,
+		StaleDays:   staleDays,
+		BrokenLinks: brokenLinks,
 	}
 	s.render(w, r, "doc_health.html", data)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
+	"github.com/exedev/docstor/internal/doclinks"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/pagination"
 	"github.com/exedev/docstor/internal/runbooks"
@@ -81,6 +82,7 @@ type DocPageData struct {
 	DefaultDocType string
 	Users          []UserOption
 	ClientOptions  []ClientOption
+	Backlinks      []doclinks.BacklinkDoc
 }
 
 type UserOption struct {
@@ -303,6 +305,12 @@ func (s *Server) handleDocRead(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Load backlinks
+	backlinks, err := s.doclinks.GetBacklinks(ctx, tenant.ID, doc.ID)
+	if err == nil {
+		pageData.Backlinks = backlinks
+	}
+
 	// Load runbook status if this is a runbook
 	if doc.DocType == docs.DocTypeRunbook {
 		status, err := s.runbooks.GetStatus(ctx, tenant.ID, doc.ID)
@@ -447,6 +455,9 @@ func (s *Server) handleDocCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rebuild doc links
+	_ = s.doclinks.RebuildLinks(ctx, tenant.ID, doc.ID, doc.Path, body)
+
 	// Audit log
 	_ = s.audit.Log(ctx, audit.Entry{
 		TenantID:    tenant.ID,
@@ -575,6 +586,9 @@ func (s *Server) handleDocSaveByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rebuild doc links
+	_ = s.doclinks.RebuildLinks(ctx, tenant.ID, doc.ID, doc.Path, body)
+
 	// Audit log
 	_ = s.audit.Log(ctx, audit.Entry{
 		TenantID:    tenant.ID,
@@ -677,6 +691,11 @@ func (s *Server) handleDocRevertByID(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to revert document", "error", err)
 		http.Error(w, "Failed to revert document", http.StatusInternalServerError)
 		return
+	}
+
+	// Rebuild doc links with the reverted body
+	if rev, revErr := s.docs.GetRevision(ctx, tenant.ID, *doc.CurrentRevisionID); revErr == nil {
+		_ = s.doclinks.RebuildLinks(ctx, tenant.ID, doc.ID, doc.Path, rev.BodyMarkdown)
 	}
 
 	// Audit log
@@ -878,6 +897,15 @@ func (s *Server) handleDocRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rebuild doc links (path changed, so links from/to this doc may shift)
+	if updated.CurrentRevisionID != nil {
+		if rev, revErr := s.docs.GetRevision(ctx, tenant.ID, *updated.CurrentRevisionID); revErr == nil {
+			_ = s.doclinks.RebuildLinks(ctx, tenant.ID, updated.ID, updated.Path, rev.BodyMarkdown)
+		}
+	}
+	// Mark links pointing to old path as broken (they'll resolve on next rebuild)
+	_ = s.doclinks.MarkLinksToPathBroken(ctx, tenant.ID, oldPath)
+
 	// Audit log
 	_ = s.audit.Log(ctx, audit.Entry{
 		TenantID:    tenant.ID,
@@ -918,6 +946,11 @@ func (s *Server) handleDocDelete(w http.ResponseWriter, r *http.Request) {
 	docID := doc.ID
 	docPath := doc.Path
 	docTitle := doc.Title
+
+	// Clean up doc links before deleting (CASCADE will handle doc_links rows too,
+	// but we also need to mark inbound links as broken)
+	_ = s.doclinks.DeleteLinksFrom(ctx, tenant.ID, docID)
+	_ = s.doclinks.MarkLinksToPathBroken(ctx, tenant.ID, docPath)
 
 	if err := s.docs.Delete(ctx, tenant.ID, docID); err != nil {
 		slog.Error("failed to delete document", "error", err)

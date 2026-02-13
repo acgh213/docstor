@@ -27,6 +27,7 @@ import (
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
+	"github.com/exedev/docstor/internal/doclinks"
 	"github.com/exedev/docstor/internal/sites"
 	tmplpkg "github.com/exedev/docstor/internal/templates"
 )
@@ -54,6 +55,7 @@ type Server struct {
 	cmdb            *cmdb.Repository
 	incidents       *incidents.Repository
 	sites           *sites.Repository
+	doclinks        *doclinks.Repository
 	loginLimiter    *auth.RateLimiter
 }
 
@@ -81,6 +83,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	cmdbRepo := cmdb.NewRepository(db)
 	incidentsRepo := incidents.NewRepository(db)
 	sitesRepo := sites.NewRepository(db)
+	doclinksRepo := doclinks.NewRepository(db)
 
 	s := &Server{
 		db:           db,
@@ -98,6 +101,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		cmdb:            cmdbRepo,
 		incidents:       incidentsRepo,
 		sites:           sitesRepo,
+		doclinks:        doclinksRepo,
 		loginLimiter:    auth.NewRateLimiter(5, time.Minute),
 	}
 

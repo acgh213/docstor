@@ -46,6 +46,10 @@
                         <div class="stat-number">{{len .UnownedDocs}}</div>
                         <div class="stat-label">Unowned</div>
                     </div>
+                    <div class="stat-card {{if $.Content.BrokenLinks}}stat-card-warning{{end}}">
+                        <div class="stat-number">{{len $.Content.BrokenLinks}}</div>
+                        <div class="stat-label">Broken Links</div>
+                    </div>
                 </div>
 
                 {{if .StaleDocs}}
@@ -118,6 +122,38 @@
                     <h3>👤 Unowned Documents</h3>
                     <div class="empty-state" style="padding: 24px;">
                         <p>✅ All documents have owners assigned.</p>
+                    </div>
+                </section>
+                {{end}}
+
+                {{if .BrokenLinks}}
+                <section class="card dashboard-section">
+                    <h3>⚠️ Broken Links</h3>
+                    <p class="text-muted" style="margin-top: 0; margin-bottom: 12px;">Internal document links pointing to non-existent paths</p>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>From Document</th>
+                                    <th>Broken Link Target</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{range .BrokenLinks}}
+                                <tr>
+                                    <td><a href="/docs/{{.FromPath}}">{{.FromTitle}}</a></td>
+                                    <td><code>{{.LinkPath}}</code></td>
+                                </tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                {{else}}
+                <section class="card dashboard-section">
+                    <h3>⚠️ Broken Links</h3>
+                    <div class="empty-state" style="padding: 24px;">
+                        <p>✅ No broken internal links found.</p>
                     </div>
                 </section>
                 {{end}}
