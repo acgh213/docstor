@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS change_links;
+DROP TABLE IF EXISTS changes;

@@ -1,0 +1,193 @@
+{{define "change_view.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+                <div class="breadcrumbs">
+                    <a href="/">Dashboard</a>
+                    <span class="separator">/</span>
+                    <a href="/changes">Changes</a>
+                    <span class="separator">/</span>
+                    <span>{{.Content.Change.Title}}</span>
+                </div>
+                {{with .Content}}
+                <div class="page-header">
+                    <h2>{{.Change.Title}}</h2>
+                    <div>
+                        <span class="badge badge-{{.Change.Status}}">{{.Change.Status}}</span>
+                        <span class="badge badge-risk-{{.Change.RiskLevel}}">{{.Change.RiskLevel}}</span>
+                    </div>
+                </div>
+
+                {{if $.Membership.IsEditor}}
+                <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="/changes/{{.Change.ID}}/edit" class="btn btn-secondary btn-sm">Edit</a>
+                    {{if eq .Change.Status "draft"}}
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="approved">
+                        <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                    </form>
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="cancelled">
+                        <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                    </form>
+                    {{else if eq .Change.Status "approved"}}
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="in_progress">
+                        <button type="submit" class="btn btn-primary btn-sm">Start</button>
+                    </form>
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="cancelled">
+                        <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                    </form>
+                    {{else if eq .Change.Status "in_progress"}}
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="completed">
+                        <button type="submit" class="btn btn-primary btn-sm">Complete</button>
+                    </form>
+                    <form method="POST" action="/changes/{{.Change.ID}}/transition" style="display:inline">
+                        {{$.CSRFField}}
+                        <input type="hidden" name="status" value="rolled_back">
+                        <button type="submit" class="btn btn-warning btn-sm">Roll Back</button>
+                    </form>
+                    {{end}}
+                    {{if or (eq .Change.Status "draft") (eq .Change.Status "cancelled")}}
+                    <form method="POST" action="/changes/{{.Change.ID}}/delete" style="display:inline"
+                          onsubmit="return confirm('Delete this change record?')">
+                        {{$.CSRFField}}
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                    {{end}}
+                </div>
+                {{end}}
+
+                <div class="doc-layout">
+                    <div class="doc-body">
+                        {{if .DescriptionHTML}}
+                        <section class="card">
+                            <h3>Description</h3>
+                            <div class="markdown-body">{{.DescriptionHTML}}</div>
+                        </section>
+                        {{end}}
+
+                        {{if .RollbackHTML}}
+                        <section class="card" style="margin-top:16px">
+                            <h3>↩️ Rollback Plan</h3>
+                            <div class="markdown-body">{{.RollbackHTML}}</div>
+                        </section>
+                        {{end}}
+
+                        {{if .ValidationHTML}}
+                        <section class="card" style="margin-top:16px">
+                            <h3>✅ Validation Plan</h3>
+                            <div class="markdown-body">{{.ValidationHTML}}</div>
+                        </section>
+                        {{end}}
+
+                        {{if .Links}}
+                        <section class="card" style="margin-top:16px">
+                            <h3>🔗 Linked Items</h3>
+                            <table class="table">
+                                <thead><tr><th>Type</th><th>Name</th><th></th></tr></thead>
+                                <tbody>
+                                {{range .Links}}
+                                <tr>
+                                    <td>{{.LinkedType}}</td>
+                                    <td>
+                                        {{if eq .LinkedType "document"}}<a href="/docs/id/{{.LinkedID}}/edit">{{.LinkedName}}</a>
+                                        {{else if eq .LinkedType "checklist_instance"}}<a href="/checklist-instances/{{.LinkedID}}">{{.LinkedName}}</a>
+                                        {{else if eq .LinkedType "evidence_bundle"}}<a href="/evidence-bundles/{{.LinkedID}}">{{.LinkedName}}</a>
+                                        {{else}}{{.LinkedName}}{{end}}
+                                    </td>
+                                    <td>
+                                        {{if $.Membership.IsEditor}}
+                                        <form method="POST" action="/changes/{{$.Content.Change.ID}}/links/{{.ID}}/remove" style="display:inline">
+                                            {{$.CSRFField}}
+                                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                        </form>
+                                        {{end}}
+                                    </td>
+                                </tr>
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </section>
+                        {{end}}
+
+                        {{if $.Membership.IsEditor}}
+                        <section class="card" style="margin-top:16px">
+                            <h3>Add Link</h3>
+                            <form method="POST" action="/changes/{{.Change.ID}}/links" class="form-row">
+                                {{$.CSRFField}}
+                                <div class="form-group">
+                                    <select name="linked_type" class="form-control">
+                                        <option value="document">Document</option>
+                                        <option value="checklist_instance">Checklist Instance</option>
+                                        <option value="evidence_bundle">Evidence Bundle</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:2">
+                                    <input type="text" name="linked_id" class="form-control" placeholder="UUID of the item" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                            </form>
+                        </section>
+                        {{end}}
+                    </div>
+
+                    <aside class="doc-sidebar">
+                        <div class="card" style="padding: 1rem;">
+                            <dl class="meta-list">
+                                <dt>Status</dt>
+                                <dd><span class="badge badge-{{.Change.Status}}">{{.Change.Status}}</span></dd>
+                                <dt>Risk</dt>
+                                <dd><span class="badge badge-risk-{{.Change.RiskLevel}}">{{.Change.RiskLevel}}</span></dd>
+                                <dt>Client</dt>
+                                <dd>{{if .Change.ClientName}}{{.Change.ClientName}}{{else}}<span class="text-muted">&mdash;</span>{{end}}</dd>
+                                <dt>Created By</dt>
+                                <dd>{{.Change.CreatorName}}</dd>
+                                <dt>Created</dt>
+                                <dd>{{timeTag .Change.CreatedAt "Jan 2, 2006 3:04 PM"}}</dd>
+                                {{if .Change.ApprovedBy}}
+                                <dt>Approved By</dt>
+                                <dd>{{.Change.ApproverName}}</dd>
+                                <dt>Approved At</dt>
+                                <dd>{{timeTag .Change.ApprovedAt "Jan 2, 2006 3:04 PM"}}</dd>
+                                {{end}}
+                                {{if .Change.CompletedAt}}
+                                <dt>Completed At</dt>
+                                <dd>{{timeTag .Change.CompletedAt "Jan 2, 2006 3:04 PM"}}</dd>
+                                {{end}}
+                                {{if .Change.WindowStart}}
+                                <dt>Window</dt>
+                                <dd>{{timeTag .Change.WindowStart "Jan 2, 15:04"}} &rarr; {{if .Change.WindowEnd}}{{timeTag .Change.WindowEnd "Jan 2, 15:04"}}{{else}}TBD{{end}}</dd>
+                                {{end}}
+                            </dl>
+                        </div>
+                    </aside>
+                </div>
+                {{end}}
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}

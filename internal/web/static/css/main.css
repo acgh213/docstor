@@ -2497,3 +2497,17 @@ a.stat-card-link:hover {
     cursor: default;
     pointer-events: none;
 }
+
+/* ============================================
+   Change badges
+   ============================================ */
+.badge-draft { background: #6c757d; color: #fff; }
+.badge-approved { background: #0d6efd; color: #fff; }
+.badge-in_progress { background: #fd7e14; color: #fff; }
+.badge-completed { background: #198754; color: #fff; }
+.badge-rolled_back { background: #dc3545; color: #fff; }
+.badge-cancelled { background: #adb5bd; color: #333; }
+.badge-risk-low { background: #d4edda; color: #155724; }
+.badge-risk-medium { background: #fff3cd; color: #856404; }
+.badge-risk-high { background: #f8d7da; color: #721c24; }
+.badge-risk-critical { background: #dc3545; color: #fff; }

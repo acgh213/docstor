@@ -27,6 +27,7 @@ import (
 	"github.com/exedev/docstor/internal/config"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
+	changespkg "github.com/exedev/docstor/internal/changes"
 	"github.com/exedev/docstor/internal/doclinks"
 	"github.com/exedev/docstor/internal/sites"
 	tmplpkg "github.com/exedev/docstor/internal/templates"
@@ -56,6 +57,7 @@ type Server struct {
 	incidents       *incidents.Repository
 	sites           *sites.Repository
 	doclinks        *doclinks.Repository
+	changes         *changespkg.Repository
 	loginLimiter    *auth.RateLimiter
 }
 
@@ -84,6 +86,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 	incidentsRepo := incidents.NewRepository(db)
 	sitesRepo := sites.NewRepository(db)
 	doclinksRepo := doclinks.NewRepository(db)
+	changesRepo := changespkg.NewRepository(db)
 
 	s := &Server{
 		db:           db,
@@ -102,6 +105,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 		incidents:       incidentsRepo,
 		sites:           sitesRepo,
 		doclinks:        doclinksRepo,
+		changes:         changesRepo,
 		loginLimiter:    auth.NewRateLimiter(5, time.Minute),
 	}
 
@@ -316,6 +320,20 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) http.Handler {
 			r.Post("/{id}/delete", s.handleIncidentDelete)
 		})
 
+		// Changes
+		r.Route("/changes", func(r chi.Router) {
+			r.Get("/", s.handleChangesList)
+			r.Get("/new", s.handleChangeNew)
+			r.Post("/", s.handleChangeCreate)
+			r.Get("/{id}", s.handleChangeView)
+			r.Get("/{id}/edit", s.handleChangeEdit)
+			r.Post("/{id}", s.handleChangeUpdate)
+			r.Post("/{id}/transition", s.handleChangeTransition)
+			r.Post("/{id}/delete", s.handleChangeDelete)
+			r.Post("/{id}/links", s.handleChangeLinkAdd)
+			r.Post("/{id}/links/{linkID}/remove", s.handleChangeLinkRemove)
+		})
+
 		// Admin
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(s.authMw.RequireRole("admin"))
@@ -387,9 +405,21 @@ func (s *Server) loadTemplates() error {
 			}
 			return a / b
 		},
-		"timeTag": func(t time.Time, format string) template.HTML {
-			iso := t.Format(time.RFC3339)
-			display := t.Format(format)
+		"timeTag": func(t any, format string) template.HTML {
+			var tt time.Time
+			switch v := t.(type) {
+			case time.Time:
+				tt = v
+			case *time.Time:
+				if v == nil {
+					return template.HTML(`<span class="text-muted">&mdash;</span>`)
+				}
+				tt = *v
+			default:
+				return template.HTML(`<span class="text-muted">&mdash;</span>`)
+			}
+			iso := tt.Format(time.RFC3339)
+			display := tt.Format(format)
 			return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, display))
 		},
 		"isPreviewable": func(filename, contentType string) bool {
@@ -418,6 +448,7 @@ func (s *Server) loadTemplates() error {
 		"templates/cmdb/*.html",
 		"templates/sites/*.html",
 		"templates/incidents/*.html",
+		"templates/changes/*.html",
 		"templates/landing.html",
 	)
 	if err != nil {

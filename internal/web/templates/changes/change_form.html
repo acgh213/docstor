@@ -1,0 +1,94 @@
+{{define "change_form.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{template "head_common" .}}
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        {{template "sidebar" .}}
+        <main class="main-content">
+            {{template "topbar" .}}
+            <div class="content">
+                {{template "alerts" .}}
+                <div class="breadcrumbs">
+                    <a href="/">Dashboard</a>
+                    <span class="separator">/</span>
+                    <a href="/changes">Changes</a>
+                    <span class="separator">/</span>
+                    <span>{{if .Content.Change}}Edit{{else}}New{{end}}</span>
+                </div>
+                <div class="page-header">
+                    <h2>{{if .Content.Change}}Edit Change{{else}}New Change{{end}}</h2>
+                </div>
+                {{with .Content}}
+                <div class="card">
+                    <form method="POST" action="{{if .Change}}/changes/{{.Change.ID}}{{else}}/changes{{end}}">
+                        {{$.CSRFField}}
+                        <div class="form-row">
+                            <div class="form-group" style="flex:2">
+                                <label for="title">Title *</label>
+                                <input type="text" id="title" name="title" class="form-control" required
+                                    value="{{if .Change}}{{.Change.Title}}{{end}}">
+                            </div>
+                            <div class="form-group">
+                                <label for="risk_level">Risk Level</label>
+                                <select id="risk_level" name="risk_level" class="form-control">
+                                    <option value="low" {{if and .Change (eq .Change.RiskLevel "low")}}selected{{end}}>Low</option>
+                                    <option value="medium" {{if and .Change (eq .Change.RiskLevel "medium")}}selected{{end}}>Medium</option>
+                                    <option value="high" {{if and .Change (eq .Change.RiskLevel "high")}}selected{{end}}>High</option>
+                                    <option value="critical" {{if and .Change (eq .Change.RiskLevel "critical")}}selected{{end}}>Critical</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="client_id">Client</label>
+                                <select id="client_id" name="client_id" class="form-control">
+                                    <option value="">-- None --</option>
+                                    {{range .Clients}}
+                                    <option value="{{.ID}}" {{if .Selected}}selected{{end}}>{{.Name}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="window_start">Window Start</label>
+                                <input type="datetime-local" id="window_start" name="window_start" class="form-control"
+                                    value="{{if and .Change .Change.WindowStart}}{{.Change.WindowStart.Format "2006-01-02T15:04"}}{{end}}">
+                            </div>
+                            <div class="form-group">
+                                <label for="window_end">Window End</label>
+                                <input type="datetime-local" id="window_end" name="window_end" class="form-control"
+                                    value="{{if and .Change .Change.WindowEnd}}{{.Change.WindowEnd.Format "2006-01-02T15:04"}}{{end}}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description (Markdown)</label>
+                            <textarea id="description" name="description" class="form-control" rows="6">{{if .Change}}{{.Change.DescriptionMarkdown}}{{end}}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="rollback_plan">Rollback Plan (Markdown)</label>
+                            <textarea id="rollback_plan" name="rollback_plan" class="form-control" rows="4">{{if .Change}}{{.Change.RollbackPlanMarkdown}}{{end}}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="validation_plan">Validation Plan (Markdown)</label>
+                            <textarea id="validation_plan" name="validation_plan" class="form-control" rows="4">{{if .Change}}{{.Change.ValidationPlanMarkdown}}{{end}}</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{{if .Change}}Update{{else}}Create{{end}} Change</button>
+                            <a href="/changes" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+                {{end}}
+            </div>
+        </main>
+    </div>
+{{template "page_scripts" .}}
+</body>
+</html>
+{{end}}
