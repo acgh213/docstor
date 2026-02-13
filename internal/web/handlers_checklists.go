@@ -12,6 +12,7 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/checklists"
+	"github.com/exedev/docstor/internal/pagination"
 )
 
 func (s *Server) handleChecklistsList(w http.ResponseWriter, r *http.Request) {
@@ -28,9 +29,14 @@ func (s *Server) handleChecklistsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, cls)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Checklists - Docstor"
-	data.Content = cls
+	data.Pagination = &pv
+	data.Content = paged
 	s.render(w, r, "checklists_list.html", data)
 }
 
@@ -343,10 +349,15 @@ func (s *Server) handleInstancesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, instances)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Checklist Runs - Docstor"
+	data.Pagination = &pv
 	data.Content = map[string]any{
-		"Instances": instances,
+		"Instances": paged,
 		"Status":    status,
 	}
 	s.render(w, r, "instances_list.html", data)

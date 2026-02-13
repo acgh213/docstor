@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
+	"github.com/exedev/docstor/internal/pagination"
 )
 
 // ── Data types for admin templates ──────────────────────────────────
@@ -87,9 +89,14 @@ func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		users = append(users, u)
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, users)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Admin · Users"
-	data.Content = users
+	data.Pagination = &pv
+	data.Content = paged
 	s.render(w, r, "admin_users.html", data)
 }
 
@@ -404,7 +411,21 @@ func (s *Server) handleAdminAudit(w http.ResponseWriter, r *http.Request) {
 		query += ` AND a.action = $2`
 		args = append(args, filter)
 	}
-	query += ` ORDER BY a.at DESC LIMIT 100`
+	// Count total for pagination
+	countQuery := `SELECT COUNT(*) FROM audit_log a WHERE a.tenant_id = $1`
+	countArgs := []any{tenant.ID}
+	if filter != "" {
+		countQuery += ` AND a.action = $2`
+		countArgs = append(countArgs, filter)
+	}
+	var total int
+	_ = s.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total)
+
+	pg := pagination.FromRequest(r, pagination.AuditPerPage)
+	pg.Apply(total)
+	pv := pg.View(r)
+
+	query += fmt.Sprintf(` ORDER BY a.at DESC LIMIT %d OFFSET %d`, pg.PerPage, pg.Offset())
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
@@ -430,6 +451,7 @@ func (s *Server) handleAdminAudit(w http.ResponseWriter, r *http.Request) {
 
 	data := s.newPageData(r)
 	data.Title = "Admin · Audit Log"
+	data.Pagination = &pv
 	data.Content = adminAuditPageData{Entries: entries, Filter: filter}
 	s.render(w, r, "admin_audit.html", data)
 }

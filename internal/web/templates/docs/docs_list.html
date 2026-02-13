@@ -140,7 +140,7 @@
                         </tbody>
                     </table>
                     </div>
-                    <div class="text-muted" style="margin-top: 8px; font-size: 13px;">{{len $d.Docs}} document{{if ne (len $d.Docs) 1}}s{{end}}</div>
+                    {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                     {{else}}
                     <div class="empty-state">
                         {{if or $d.ClientID $d.DocType}}

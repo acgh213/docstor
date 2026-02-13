@@ -17,6 +17,7 @@ import (
 	"github.com/exedev/docstor/internal/attachments"
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
+	"github.com/exedev/docstor/internal/pagination"
 )
 
 const maxUploadSize = 50 * 1024 * 1024 // 50MB
@@ -311,9 +312,14 @@ func (s *Server) handleBundlesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, bundles)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Evidence Bundles"
-	data.Content = map[string]any{"Bundles": bundles}
+	data.Pagination = &pv
+	data.Content = map[string]any{"Bundles": paged}
 	s.render(w, r, "bundles_list.html", data)
 }
 

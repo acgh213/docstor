@@ -1,0 +1,21 @@
+{{define "pagination"}}
+{{if or .HasPrev .HasNext}}
+<nav class="pagination">
+    <div class="pagination-info">
+        {{if ge .Total 0}}Page {{.Number}} of {{.TotalPages}} ({{.Total}} items){{end}}
+    </div>
+    <div class="pagination-controls">
+        {{if .HasPrev}}
+        <a href="{{.PrevURL}}" class="btn btn-sm">&larr; Previous</a>
+        {{else}}
+        <span class="btn btn-sm btn-disabled">&larr; Previous</span>
+        {{end}}
+        {{if .HasNext}}
+        <a href="{{.NextURL}}" class="btn btn-sm">Next &rarr;</a>
+        {{else}}
+        <span class="btn btn-sm btn-disabled">Next &rarr;</span>
+        {{end}}
+    </div>
+</nav>
+{{end}}
+{{end}}

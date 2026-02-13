@@ -2472,3 +2472,28 @@ a.stat-card-link:hover {
 .preview-container img {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+/* ============================================
+   Pagination
+   ============================================ */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0 1rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid #e0e0e0;
+}
+.pagination-info {
+    color: #666;
+    font-size: 0.875rem;
+}
+.pagination-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+.btn-disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}

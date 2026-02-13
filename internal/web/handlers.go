@@ -18,6 +18,7 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
+	"github.com/exedev/docstor/internal/pagination"
 	"github.com/exedev/docstor/internal/docs"
 	"github.com/exedev/docstor/internal/runbooks"
 )
@@ -32,6 +33,7 @@ type PageData struct {
 	Success    string
 	CSRFToken  string
 	CSRFField  template.HTML
+	Pagination *pagination.PageView
 }
 
 func (s *Server) newPageData(r *http.Request) PageData {
@@ -404,9 +406,14 @@ func (s *Server) handleClientsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, clientList)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Clients - Docstor"
-	data.Content = clientList
+	data.Pagination = &pv
+	data.Content = paged
 	s.render(w, r, "clients_list.html", data)
 }
 

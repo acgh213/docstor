@@ -12,6 +12,7 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
+	"github.com/exedev/docstor/internal/pagination"
 	"github.com/exedev/docstor/internal/sites"
 )
 
@@ -46,9 +47,14 @@ func (s *Server) handleSitesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, sitesList)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Sites - Docstor"
-	data.Content = sitesList
+	data.Pagination = &pv
+	data.Content = paged
 	s.render(w, r, "sites_list.html", data)
 }
 

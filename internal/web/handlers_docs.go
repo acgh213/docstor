@@ -16,6 +16,7 @@ import (
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/pagination"
 	"github.com/exedev/docstor/internal/runbooks"
 )
 
@@ -155,12 +156,18 @@ func (s *Server) handleDocsHomeV2(w http.ResponseWriter, r *http.Request) {
 	// Sort
 	sortDocs(docsList, sortCol, sortDir)
 
+	// Paginate
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, docsList)
+	pv := pg.View(r)
+
 	clientsList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Documents - Docstor"
+	data.Pagination = &pv
 	data.Content = DocsListData{
-		Docs:     docsList,
+		Docs:     paged,
 		Clients:  clientsList,
 		ClientID: clientIDStr,
 		DocType:  dtStr,
@@ -600,12 +607,17 @@ func (s *Server) handleDocHistoryByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, revisions)
+	pv := pg.View(r)
+
 	pageData := DocPageData{
 		PageData:  s.newPageData(r),
 		Document:  doc,
-		Revisions: revisions,
+		Revisions: paged,
 	}
 	pageData.Title = "History - " + doc.Title
+	pageData.Pagination = &pv
 
 	s.templates.ExecuteTemplate(w, "doc_history.html", pageData)
 }

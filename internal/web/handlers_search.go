@@ -10,6 +10,7 @@ import (
 
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/pagination"
 )
 
 type SearchPageData struct {
@@ -75,7 +76,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		filters.DocType = &dt
 	}
 
-	results, err := s.docs.Search(ctx, tenant.ID, query, filters, 50)
+	results, err := s.docs.Search(ctx, tenant.ID, query, filters, 200)
 	if err != nil {
 		slog.Error("search failed", "error", err, "query", query)
 		pageData.Error = "Search failed. Please try again."
@@ -100,7 +101,12 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		results[i].Headline = sanitizeHeadline(results[i].Headline)
 	}
 
-	pageData.Results = results
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, results)
+	pv := pg.View(r)
+
+	pageData.Results = paged
+	pageData.Pagination = &pv
 	pageData.Title = "Search: " + query + " - Docstor"
 
 	s.templates.ExecuteTemplate(w, "search.html", pageData)

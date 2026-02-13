@@ -14,6 +14,7 @@ import (
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/incidents"
+	"github.com/exedev/docstor/internal/pagination"
 )
 
 // --- Content structs ---
@@ -71,12 +72,17 @@ func (s *Server) handleKnownIssuesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, issues)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Known Issues - Docstor"
+	data.Pagination = &pv
 	data.Content = KnownIssuesListData{
-		Issues:           issues,
+		Issues:           paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 		SelectedStatus:   status,
@@ -411,12 +417,17 @@ func (s *Server) handleIncidentsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, incidentList)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Incidents - Docstor"
+	data.Pagination = &pv
 	data.Content = IncidentsListData{
-		Incidents:        incidentList,
+		Incidents:        paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 		SelectedStatus:   status,

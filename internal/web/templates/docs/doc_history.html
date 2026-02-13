@@ -108,6 +108,7 @@
                             {{end}}
                         </tbody>
                     </table>
+                    {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                     {{else}}
                     <div class="empty-state">
                         <p>No revision history available.</p>

@@ -12,6 +12,7 @@ import (
 	"github.com/exedev/docstor/internal/audit"
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/docs"
+	"github.com/exedev/docstor/internal/pagination"
 	tmplpkg "github.com/exedev/docstor/internal/templates"
 )
 
@@ -36,9 +37,14 @@ func (s *Server) handleTemplatesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, templates)
+	pv := pg.View(r)
+
 	data := s.newPageData(r)
 	data.Title = "Templates - Docstor"
-	data.Content = templates
+	data.Pagination = &pv
+	data.Content = paged
 	s.render(w, r, "templates_list.html", data)
 }
 

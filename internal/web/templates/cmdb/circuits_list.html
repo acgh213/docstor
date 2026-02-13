@@ -66,6 +66,7 @@
                             {{end}}
                         </tbody>
                     </table>
+                    {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                     {{else}}
                     <div class="empty-state">
                         <div class="empty-state-icon">🔌</div>

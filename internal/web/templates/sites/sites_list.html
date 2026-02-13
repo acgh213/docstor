@@ -55,6 +55,7 @@
                             {{end}}
                         </tbody>
                     </table>
+                    {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                     </div>
                     {{else}}
                     <div class="empty-state">

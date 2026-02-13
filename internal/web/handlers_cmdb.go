@@ -13,6 +13,7 @@ import (
 	"github.com/exedev/docstor/internal/auth"
 	"github.com/exedev/docstor/internal/clients"
 	"github.com/exedev/docstor/internal/cmdb"
+	"github.com/exedev/docstor/internal/pagination"
 	"github.com/exedev/docstor/internal/sites"
 )
 
@@ -115,12 +116,17 @@ func (s *Server) handleSystemsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, systems)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Systems - Docstor"
+	data.Pagination = &pv
 	data.Content = SystemsListData{
-		Systems:          systems,
+		Systems:          paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 	}
@@ -458,12 +464,17 @@ func (s *Server) handleVendorsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, vendors)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Vendors - Docstor"
+	data.Pagination = &pv
 	data.Content = VendorsListData{
-		Vendors:          vendors,
+		Vendors:          paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 	}
@@ -787,12 +798,17 @@ func (s *Server) handleContactsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, contacts)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Contacts - Docstor"
+	data.Pagination = &pv
 	data.Content = ContactsListData{
-		Contacts:         contacts,
+		Contacts:         paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 	}
@@ -1120,12 +1136,17 @@ func (s *Server) handleCircuitsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pg := pagination.FromRequest(r, pagination.DefaultPerPage)
+	paged := pagination.ApplyToSlice(&pg, circuits)
+	pv := pg.View(r)
+
 	clientList, _ := s.clients.List(ctx, tenant.ID)
 
 	data := s.newPageData(r)
 	data.Title = "Circuits - Docstor"
+	data.Pagination = &pv
 	data.Content = CircuitsListData{
-		Circuits:         circuits,
+		Circuits:         paged,
 		Clients:          clientList,
 		SelectedClientID: r.URL.Query().Get("client_id"),
 	}

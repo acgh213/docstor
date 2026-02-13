@@ -73,6 +73,7 @@
                         </div>
                     </div>
                     {{end}}
+                    {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                     {{else}}
                     <div class="card">
                         <p class="text-muted">No results found for "{{.Query}}"</p>

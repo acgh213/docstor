@@ -41,6 +41,7 @@
                     </div>
                     {{end}}
                 </div>
+                {{if $.Pagination}}{{template "pagination" $.Pagination}}{{end}}
                 {{else}}
                 <div class="empty-state">
                     <p>No evidence bundles yet.</p>
