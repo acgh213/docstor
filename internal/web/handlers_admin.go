@@ -11,9 +11,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/pagination"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/pagination"
 )
 
 // ── Data types for admin templates ──────────────────────────────────

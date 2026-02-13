@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/exedev/docstor/internal/sites"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/sites"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestSites_CRUD(t *testing.T) {

@@ -13,10 +13,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/docs"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func hashForTest(password string) (string, error) {

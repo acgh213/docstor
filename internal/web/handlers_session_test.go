@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 // createUserWithKnownEmail creates a user with a predictable email so we can login.

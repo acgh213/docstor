@@ -38,7 +38,7 @@ Thumbs.db
 uploads/
 
 # Build artifacts
-docstor
+/docstor
 editor-bundle/node_modules/
 editor-bundle/package-lock.json
 .claude/

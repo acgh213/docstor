@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/exedev/docstor/internal/checklists"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/checklists"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestChecklists_CRUD(t *testing.T) {

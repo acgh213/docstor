@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/docs"
-	"github.com/exedev/docstor/internal/pagination"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/pagination"
 )
 
 type SearchPageData struct {

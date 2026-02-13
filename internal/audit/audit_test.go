@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestAuditLog_RoundTrip(t *testing.T) {

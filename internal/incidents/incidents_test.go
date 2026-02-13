@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/exedev/docstor/internal/incidents"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/incidents"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestKnownIssues_CRUD(t *testing.T) {

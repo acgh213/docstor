@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/cmdb"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/cmdb"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestSystems_CRUD(t *testing.T) {

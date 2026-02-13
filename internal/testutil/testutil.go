@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/db"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/db"
 )
 
 // TestDatabaseURL returns the connection string for the test database.

@@ -10,11 +10,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/clients"
-	"github.com/exedev/docstor/internal/incidents"
-	"github.com/exedev/docstor/internal/pagination"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/clients"
+	"github.com/acgh213/docstor/internal/incidents"
+	"github.com/acgh213/docstor/internal/pagination"
 )
 
 // --- Content structs ---

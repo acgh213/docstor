@@ -1,4 +1,4 @@
-module github.com/exedev/docstor
+module github.com/acgh213/docstor
 
 go 1.22
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/exedev/docstor/internal/templates"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/templates"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestTemplates_CRUD(t *testing.T) {

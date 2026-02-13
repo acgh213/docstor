@@ -9,11 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/docs"
-	"github.com/exedev/docstor/internal/pagination"
-	tmplpkg "github.com/exedev/docstor/internal/templates"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/pagination"
+	tmplpkg "github.com/acgh213/docstor/internal/templates"
 )
 
 type TemplatePageData struct {

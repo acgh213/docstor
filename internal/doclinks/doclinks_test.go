@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/doclinks"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/doclinks"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 // --- Unit tests for link parsing ---

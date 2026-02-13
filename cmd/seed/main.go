@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
-	"github.com/exedev/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/auth"
 )
 
 func main() {

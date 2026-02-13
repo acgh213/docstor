@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/attachments"
-	"github.com/exedev/docstor/internal/docs"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/attachments"
+	"github.com/acgh213/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 func TestAttachments_CreateAndGet(t *testing.T) {

@@ -11,9 +11,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/exedev/docstor/internal/audit"
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/audit"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/docs"
 )
 
 // SVG icons for folder tree (inline, no external deps)

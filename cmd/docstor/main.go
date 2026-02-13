@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/exedev/docstor/internal/config"
-	"github.com/exedev/docstor/internal/db"
-	"github.com/exedev/docstor/internal/web"
+	"github.com/acgh213/docstor/internal/config"
+	"github.com/acgh213/docstor/internal/db"
+	"github.com/acgh213/docstor/internal/web"
 )
 
 func main() {

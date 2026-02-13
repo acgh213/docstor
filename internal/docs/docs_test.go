@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/exedev/docstor/internal/clients"
-	"github.com/exedev/docstor/internal/docs"
-	"github.com/exedev/docstor/internal/testutil"
+	"github.com/acgh213/docstor/internal/clients"
+	"github.com/acgh213/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/testutil"
 )
 
 // ---------------------------------------------------------------------------

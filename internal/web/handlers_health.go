@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/exedev/docstor/internal/auth"
-	"github.com/exedev/docstor/internal/doclinks"
-	"github.com/exedev/docstor/internal/docs"
+	"github.com/acgh213/docstor/internal/auth"
+	"github.com/acgh213/docstor/internal/doclinks"
+	"github.com/acgh213/docstor/internal/docs"
 )
 
 type DocHealthPageData struct {
